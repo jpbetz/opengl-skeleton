@@ -3,6 +3,7 @@ natives
 build
 .gradle
 out
-lwjgl.iml
-lwjgl.ipr
-lwjgl.iws
+opengl-skeleton.iml
+opengl-skeleton.ipr
+opengl-skeleton.iws
+

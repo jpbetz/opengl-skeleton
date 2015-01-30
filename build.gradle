@@ -18,16 +18,17 @@ apply plugin: 'application'
 apply plugin:'com.stehno.natives'
 
 dependencies {
-    compile "org.lwjgl.lwjgl:lwjgl:2.8.4"
+    compile "org.lwjgl.lwjgl:lwjgl:2.9.2"
 }
-mainClassName = "Main"
+mainClassName = "HelloWorld"
+sourceCompatibility = 1.8
 
 // See https://github.com/cjstehno/gradle-natives
 natives {
     jars = [
-            'lwjgl-platform-2.8.4-natives-windows',
-            'lwjgl-platform-2.8.4-natives-osx',
-            'lwjgl-platform-2.8.4-natives-linux'
+            'lwjgl-platform-2.9.2-natives-windows',
+            'lwjgl-platform-2.9.2-natives-osx',
+            'lwjgl-platform-2.9.2-natives-linux'
     ]
     platforms = 'osx'
 }
