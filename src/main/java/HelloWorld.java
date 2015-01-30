@@ -3,6 +3,7 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 
+// See: http://wiki.lwjgl.org/wiki/Main_Page
 public class HelloWorld {
 
     public void start() {
