@@ -17,11 +17,12 @@ apply plugin: 'idea'
 apply plugin: 'application'
 apply plugin:'com.stehno.natives'
 
+mainClassName = "HelloWorld"
+sourceCompatibility = 1.8
+
 dependencies {
     compile "org.lwjgl.lwjgl:lwjgl:2.9.2"
 }
-mainClassName = "HelloWorld"
-sourceCompatibility = 1.8
 
 // See https://github.com/cjstehno/gradle-natives
 natives {
@@ -30,7 +31,7 @@ natives {
             'lwjgl-platform-2.9.2-natives-osx',
             'lwjgl-platform-2.9.2-natives-linux'
     ]
-    platforms = 'osx'
+    // platforms = 'osx' // if commented out,  all platforms are assumed when running 'gradle unpackNatives'
 }
 
 run {
