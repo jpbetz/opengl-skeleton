@@ -1,0 +1,37 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.stehno:gradle-natives:0.2.1'
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'application'
+apply plugin:'com.stehno.natives'
+
+dependencies {
+    compile "org.lwjgl.lwjgl:lwjgl:2.8.4"
+}
+mainClassName = "Main"
+
+// See https://github.com/cjstehno/gradle-natives
+natives {
+    jars = [
+            'lwjgl-platform-2.8.4-natives-windows',
+            'lwjgl-platform-2.8.4-natives-osx',
+            'lwjgl-platform-2.8.4-natives-linux'
+    ]
+    platforms = 'osx'
+}
+
+run {
+    systemProperty 'java.library.path', file( 'build/natives/osx' )
+}

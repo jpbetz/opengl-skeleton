@@ -1,0 +1,8 @@
+.idea
+natives
+build
+.gradle
+out
+lwjgl.iml
+lwjgl.ipr
+lwjgl.iws
