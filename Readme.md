@@ -1,11 +1,15 @@
-A skeleton gradle project for full access to OpenGL on the JVM.  It simply sets up a dependency to
-[LWJGL](http://www.lwjgl.org/),  the same OpenGL bindings used by Minecraft.
+A gradle skeleton project for full access to OpenGL on the JVM.  The main thing this skeleton does is set up a build
+dependency to [LWJGL](http://www.lwjgl.org/),  the same OpenGL bindings used by Minecraft.  This dependency is not
+entirely trivial because LWJGL uses JNI.
 
-The main thing this skeleton does is use [gradle-natives plugin](https://github.com/cjstehno/gradle-natives) to load
-[LWJGL](http://www.lwjgl.org/) native binaries for the correct platform.
+[gradle-natives plugin](https://github.com/cjstehno/gradle-natives) is used to load
+LWJGL native binaries for the correct platform.  This was documented fairly well on the web
+but I wanted an working skeleton project that has everything in one place.
 
-Unlike most other Java 3d style APIs,  LWJGL gives direct, low level, access to all OpenGL APIs,  including 4.5.  It
-also includes bindings to related specifications such as OpenCL.
+This is a great starting point for anyone wanting to work directly with OpenGL who is most familiar with a JVM language
+(Java, Scala, Clojure, Groovy, ...) because unlike most other Java 3d style APIs,  LWJGL gives direct, low level, access
+to all OpenGL APIs,  including 4.5.  It would, for example, go great with Jason L. McKesson's
+[Learning Modern 3D Graphics Programming](http://www.arcsynthesis.org/gltut/).
 
 An HelloWorld class using [LWJGL](http://www.lwjgl.org/) is included to display a minimal OpenGL window.
 
