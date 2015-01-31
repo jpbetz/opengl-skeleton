@@ -2,6 +2,8 @@ A gradle skeleton project for full access to OpenGL on the JVM.  The main thing 
 dependency to [LWJGL](http://www.lwjgl.org/),  the same OpenGL bindings used by Minecraft.  This dependency is not
 entirely trivial because LWJGL uses JNI.
 
+SBT users,  see [sbt-lwjgl-plugin](https://github.com/philcali/sbt-lwjgl-plugin).
+
 [gradle-natives plugin](https://github.com/cjstehno/gradle-natives) is used to load
 LWJGL native binaries for the correct platform.  This was documented fairly well on the web
 but I wanted an working skeleton project that has everything in one place.

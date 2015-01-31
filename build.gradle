@@ -22,6 +22,7 @@ sourceCompatibility = 1.8
 
 dependencies {
     compile "org.lwjgl.lwjgl:lwjgl:2.9.2"
+    compile "org.lwjgl.lwjgl:lwjgl_util:2.9.2"
 }
 
 // See https://github.com/cjstehno/gradle-natives
