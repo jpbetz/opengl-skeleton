@@ -1,50 +1,76 @@
-import org.lwjgl.LWJGLException;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.DisplayMode;
-import org.lwjgl.opengl.GL11;
 
-// See: http://wiki.lwjgl.org/wiki/Main_Page
-public class HelloWorld {
+import java.nio.FloatBuffer;
 
-  public void start() {
-    try {
-      Display.setDisplayMode(new DisplayMode(800, 600));
-      Display.setVSyncEnabled(true);
-      Display.create();
-    } catch (LWJGLException e) {
-      e.printStackTrace();
-      System.exit(0);
-    }
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 
-    // init OpenGL
-    GL11.glMatrixMode(GL11.GL_PROJECTION);
-    GL11.glLoadIdentity();
-    GL11.glOrtho(0, 800, 0, 600, 1, -1);
-    GL11.glMatrixMode(GL11.GL_MODELVIEW);
-
-    while (!Display.isCloseRequested()) {
-      // Clear the screen and depth buffer
-      GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-
-      // set the color of the quad (R,G,B,A)
-      GL11.glColor3f(0.5f, 0.5f, 1.0f);
-
-      // draw quad
-      GL11.glBegin(GL11.GL_QUADS);
-      GL11.glVertex2f(100, 100);
-      GL11.glVertex2f(100 + 200, 100);
-      GL11.glVertex2f(100 + 200, 100 + 200);
-      GL11.glVertex2f(100, 100 + 200);
-      GL11.glEnd();
-
-      Display.update();
-    }
-
-    Display.destroy();
+// Based on: https://bitbucket.org/alfonse/gltut/src/1d1479cc7027f1e32c5adff748f3b296f1931d84/Tut%2001%20Hello%20Triangle/tut1.cpp?at=default
+// and https://bitbucket.org/alfonse/gltut/src/1d1479cc7027f1e32c5adff748f3b296f1931d84/framework/framework.cpp?at=default
+public class HelloWorld extends SingleWindowScene {
+  
+  public HelloWorld() {
+    super(800, 600, 3, 3);
   }
+  
+  int programId;
+  String vertexShader = "src/main/shaders/vertex_basic.glsl";
+  String fragmentShader = "src/main/shaders/fragment_basic.glsl";
+
+  float vertexPositions[] = {
+      0.75f, 0.75f, 0.0f, 1.0f,
+      0.75f, -0.75f, 0.0f, 1.0f,
+      -0.75f, -0.75f, 0.0f, 1.0f,
+  };
+  
+  int vertexArrayObjectId;
+  int positionBufferObject;
 
   public static void main(String[] argv) {
-    HelloWorld quadExample = new HelloWorld();
-    quadExample.start();
+    new HelloWorld().run();
+  }
+
+  protected void init() {
+    programId = ShaderLoader.initializeProgram(vertexShader, fragmentShader);
+
+    positionBufferObject = initVertexBuffer(vertexPositions);
+    vertexArrayObjectId = glGenVertexArrays();
+    glBindVertexArray(vertexArrayObjectId);
+  }
+
+  private int initVertexBuffer(float[] vertexPositions) {
+    FloatBuffer vertexPositionsBuffer = BufferUtils.createFloatBuffer(12);
+    vertexPositionsBuffer.put(vertexPositions);
+    vertexPositionsBuffer.flip();
+
+    int positionBufferObject = glGenBuffers();
+    glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject);
+    glBufferData(GL_ARRAY_BUFFER, vertexPositionsBuffer, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    return positionBufferObject;
+  }
+
+  protected void display() {
+    // clear the buffer
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // set up state
+    glUseProgram(programId);
+    glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, false, 0, 0);
+
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // clean up state
+    glDisableVertexAttribArray(0);
+    glUseProgram(0);
+
+    // draw the frame
+    Display.update();
   }
 }
