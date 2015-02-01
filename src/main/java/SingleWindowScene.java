@@ -30,10 +30,12 @@ public abstract class SingleWindowScene implements Runnable {
         display();
       }
       Display.destroy();
-    } catch (LWJGLException e) {
-      e.printStackTrace();
-      System.exit(0);
+    } catch (Throwable t) {
+      t.printStackTrace();
+      if (Display.isCreated()) Display.destroy();
+      System.exit(-1);
     }
+    System.exit(0);
   }
 
   protected void configure() throws LWJGLException {
@@ -46,6 +48,8 @@ public abstract class SingleWindowScene implements Runnable {
     Display.setDisplayMode(new DisplayMode(width, height));
     Display.setVSyncEnabled(true);
     Display.create(pixelFormat, contextAttribs);
+    //Display.setResizable(true);
+    //Display.setTitle("Hello World");
     glViewport(0, 0, width, height);
   }
 

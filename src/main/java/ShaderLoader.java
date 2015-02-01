@@ -1,21 +1,18 @@
-import org.lwjgl.opengl.Display;
 import org.lwjgl.util.glu.GLU;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
 
-import static org.lwjgl.opengl.GL11.GL_FALSE;
-import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
-import static org.lwjgl.opengl.GL11.glGetError;
+import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL20.glGetProgramInfoLog;
-import static org.lwjgl.opengl.GL20.glValidateProgram;
+import static org.lwjgl.opengl.GL32.*;
 
 public class ShaderLoader {
 
-  private static int createShader(String filename, int type) {
+  public static int createShader(String filename, int type) {
     StringBuilder shaderSource = new StringBuilder();
     int shaderID = 0;
 
@@ -31,9 +28,7 @@ public class ShaderLoader {
       }
       reader.close();
     } catch (IOException e) {
-      System.err.println("Could not read file: " + e.getMessage());
-      e.printStackTrace();
-      System.exit(-1);
+      throw new IllegalArgumentException("Could not read file: " + e.getMessage());
     }
 
     shaderID = glCreateShader(type);
@@ -46,51 +41,57 @@ public class ShaderLoader {
       throw new IllegalArgumentException("Could not compile " + file.getAbsolutePath() + ": " + info);
     }
 
-    exitOnGLError("createShader");
+    checkForGlError("createShader");
 
     return shaderID;
   }
 
-  public static int initializeProgram(String vertexShaderFilename, String fragmentShaderFilename) {
-    // Load the vertex shader
-    int vsId = createShader(vertexShaderFilename, GL_VERTEX_SHADER);
-    // Load the fragment shader
-    int fsId = createShader(fragmentShaderFilename, GL_FRAGMENT_SHADER);
+  public static int initializeProgram(Map<Integer, Integer> shaderTypeToId) {
 
     // Create a new shader program that links both shaders
-    int pId = glCreateProgram();
+    int programId = glCreateProgram();
 
-    glAttachShader(pId, vsId);
-    exitOnGLError("attachVertexShader");
+    shaderTypeToId.entrySet().stream().forEach(entry -> {
+      glAttachShader(programId, entry.getValue());
+      checkForGlError("attachShader:" + shaderTypeToString(entry.getKey()));
+    });
 
-    glAttachShader(pId, fsId);
-    exitOnGLError("attachFragmentShader");;
-
-    glLinkProgram(pId);
-    if(glGetProgrami(pId, GL_LINK_STATUS) == GL_FALSE)
-    {
-      int infoLogLength = glGetProgrami(pId, GL_INFO_LOG_LENGTH);
-      String infoLog = glGetProgramInfoLog(pId, infoLogLength);
+    glLinkProgram(programId);
+    
+    if(glGetProgrami(programId, GL_LINK_STATUS) == GL_FALSE)  {
+      int infoLogLength = glGetProgrami(programId, GL_INFO_LOG_LENGTH);
+      String infoLog = glGetProgramInfoLog(programId, infoLogLength);
       throw new IllegalArgumentException("Linker failure: " + infoLog);
     }
 
-    exitOnGLError("linkProgram");
+    shaderTypeToId.values().stream().forEach(shaderId -> {
+      glDetachShader(programId, shaderId);
+    });
 
-    glValidateProgram(pId);
+    checkForGlError("linkProgram");
 
-    exitOnGLError("initializeProgram");
-    return pId;
+    glValidateProgram(programId);
+
+    checkForGlError("initializeProgram");
+    return programId;
+  }
+  
+  private static final String shaderTypeToString(int shaderType) {
+    switch(shaderType)
+    {
+      case GL_VERTEX_SHADER: return "vertex";
+      case GL_GEOMETRY_SHADER: return "geometry";
+      case GL_FRAGMENT_SHADER: return "fragment";
+      default: return "UNKNOWN";
+    }
   }
 
-  private static void exitOnGLError(String errorMessage) {
+  private static void checkForGlError(String errorMessage) {
     int errorValue = glGetError();
 
     if (errorValue != GL_NO_ERROR) {
       String errorString = GLU.gluErrorString(errorValue);
-      System.err.println("ERROR - " + errorMessage + ": " + errorString);
-
-      if (Display.isCreated()) Display.destroy();
-      System.exit(-1);
+      throw new IllegalStateException("GL Error - " + errorMessage + ": " + errorString);
     }
   }
 }

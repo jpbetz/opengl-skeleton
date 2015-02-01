@@ -2,6 +2,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.Display;
 
 import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -34,7 +36,18 @@ public class HelloWorld extends SingleWindowScene {
   }
 
   protected void init() {
-    programId = ShaderLoader.initializeProgram(vertexShader, fragmentShader);
+    // Create shaders
+    Map<Integer, Integer> shaders = new HashMap<>();
+    shaders.put(GL_VERTEX_SHADER, ShaderLoader.createShader(vertexShader, GL_VERTEX_SHADER));
+    shaders.put(GL_FRAGMENT_SHADER, ShaderLoader.createShader(fragmentShader, GL_FRAGMENT_SHADER));
+    
+    // Create a program
+    programId = ShaderLoader.initializeProgram(shaders);
+    
+    // Clean up the shaders
+    shaders.values().stream().forEach(shaderId -> {
+      glDeleteShader(shaderId);
+    });
 
     positionBufferObject = initVertexBuffer(vertexPositions);
     vertexArrayObjectId = glGenVertexArrays();
@@ -42,7 +55,7 @@ public class HelloWorld extends SingleWindowScene {
   }
 
   private int initVertexBuffer(float[] vertexPositions) {
-    FloatBuffer vertexPositionsBuffer = BufferUtils.createFloatBuffer(12);
+    FloatBuffer vertexPositionsBuffer = BufferUtils.createFloatBuffer(vertexPositions.length);
     vertexPositionsBuffer.put(vertexPositions);
     vertexPositionsBuffer.flip();
 
@@ -62,12 +75,14 @@ public class HelloWorld extends SingleWindowScene {
     glUseProgram(programId);
     glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject);
     glEnableVertexAttribArray(0);
+    // Define the format and source of the vertex data.
     glVertexAttribPointer(0, 4, GL_FLOAT, false, 0, 0);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     // clean up state
     glDisableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
 
     // draw the frame
