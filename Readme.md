@@ -41,4 +41,8 @@ Replace 'osx' with the appropriate platform if needed.
 
 TODO
 ====
+[ ] Add model space and model hierarchy.
+[ ] Draw a sphere.
+[ ] Generate a texture.
 [ ] Upgrade to [LWJGL 3](http://www.lwjgl.org/download) once it is available in maven central (see release section on the Download page).
+[ ] Add a [Collada](https://www.khronos.org/files/collada_spec_1_5.pdf)  Ugh,  3d file formats look awful.

@@ -1,6 +1,7 @@
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.glu.GLU;
+import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.nio.FloatBuffer;
@@ -21,57 +22,58 @@ public class HelloWorld extends SingleWindowScene {
   }
   
   int programId;
-  String vertexShader = "src/main/shaders/vertex_basic.glsl";
+  String vertexShader = "src/main/shaders/MatrixPerspective.vert";
   String fragmentShader = "src/main/shaders/fragment_basic.glsl";
+  FloatBuffer matrixBuffer;
 
   float vertexPositions[] = {
-      0.25f,  0.25f, 0.75f, 1.0f,
-      0.25f, -0.25f, 0.75f, 1.0f,
-      -0.25f,  0.25f, 0.75f, 1.0f,
+      0.25f,  0.25f, -1.25f, 1.0f,
+      0.25f, -0.25f, -1.25f, 1.0f,
+      -0.25f,  0.25f, -1.25f, 1.0f,
 
-      0.25f, -0.25f, 0.75f, 1.0f,
-      -0.25f, -0.25f, 0.75f, 1.0f,
-      -0.25f,  0.25f, 0.75f, 1.0f,
+      0.25f, -0.25f, -1.25f, 1.0f,
+      -0.25f, -0.25f, -1.25f, 1.0f,
+      -0.25f,  0.25f, -1.25f, 1.0f,
 
-      0.25f,  0.25f, -0.75f, 1.0f,
-      -0.25f,  0.25f, -0.75f, 1.0f,
-      0.25f, -0.25f, -0.75f, 1.0f,
+      0.25f,  0.25f, -2.75f, 1.0f,
+      -0.25f,  0.25f, -2.75f, 1.0f,
+      0.25f, -0.25f, -2.75f, 1.0f,
 
-      0.25f, -0.25f, -0.75f, 1.0f,
-      -0.25f,  0.25f, -0.75f, 1.0f,
-      -0.25f, -0.25f, -0.75f, 1.0f,
+      0.25f, -0.25f, -2.75f, 1.0f,
+      -0.25f,  0.25f, -2.75f, 1.0f,
+      -0.25f, -0.25f, -2.75f, 1.0f,
 
-      -0.25f,  0.25f,  0.75f, 1.0f,
-      -0.25f, -0.25f,  0.75f, 1.0f,
-      -0.25f, -0.25f, -0.75f, 1.0f,
+      -0.25f,  0.25f, -1.25f, 1.0f,
+      -0.25f, -0.25f, -1.25f, 1.0f,
+      -0.25f, -0.25f, -2.75f, 1.0f,
 
-      -0.25f,  0.25f,  0.75f, 1.0f,
-      -0.25f, -0.25f, -0.75f, 1.0f,
-      -0.25f,  0.25f, -0.75f, 1.0f,
+      -0.25f,  0.25f, -1.25f, 1.0f,
+      -0.25f, -0.25f, -2.75f, 1.0f,
+      -0.25f,  0.25f, -2.75f, 1.0f,
 
-      0.25f,  0.25f,  0.75f, 1.0f,
-      0.25f, -0.25f, -0.75f, 1.0f,
-      0.25f, -0.25f,  0.75f, 1.0f,
+      0.25f,  0.25f, -1.25f, 1.0f,
+      0.25f, -0.25f, -2.75f, 1.0f,
+      0.25f, -0.25f, -1.25f, 1.0f,
 
-      0.25f,  0.25f,  0.75f, 1.0f,
-      0.25f,  0.25f, -0.75f, 1.0f,
-      0.25f, -0.25f, -0.75f, 1.0f,
+      0.25f,  0.25f, -1.25f, 1.0f,
+      0.25f,  0.25f, -2.75f, 1.0f,
+      0.25f, -0.25f, -2.75f, 1.0f,
 
-      0.25f,  0.25f, -0.75f, 1.0f,
-      0.25f,  0.25f,  0.75f, 1.0f,
-      -0.25f,  0.25f,  0.75f, 1.0f,
+      0.25f,  0.25f, -2.75f, 1.0f,
+      0.25f,  0.25f, -1.25f, 1.0f,
+      -0.25f,  0.25f, -1.25f, 1.0f,
 
-      0.25f,  0.25f, -0.75f, 1.0f,
-      -0.25f,  0.25f,  0.75f, 1.0f,
-      -0.25f,  0.25f, -0.75f, 1.0f,
+      0.25f,  0.25f, -2.75f, 1.0f,
+      -0.25f,  0.25f, -1.25f, 1.0f,
+      -0.25f,  0.25f, -2.75f, 1.0f,
 
-      0.25f, -0.25f, -0.75f, 1.0f,
-      -0.25f, -0.25f,  0.75f, 1.0f,
-      0.25f, -0.25f,  0.75f, 1.0f,
+      0.25f, -0.25f, -2.75f, 1.0f,
+      -0.25f, -0.25f, -1.25f, 1.0f,
+      0.25f, -0.25f, -1.25f, 1.0f,
 
-      0.25f, -0.25f, -0.75f, 1.0f,
-      -0.25f, -0.25f, -0.75f, 1.0f,
-      -0.25f, -0.25f,  0.75f, 1.0f,
+      0.25f, -0.25f, -2.75f, 1.0f,
+      -0.25f, -0.25f, -2.75f, 1.0f,
+      -0.25f, -0.25f, -1.25f, 1.0f,
 
 
 
@@ -123,7 +125,6 @@ public class HelloWorld extends SingleWindowScene {
       0.0f, 1.0f, 1.0f, 1.0f,
       0.0f, 1.0f, 1.0f, 1.0f,
       0.0f, 1.0f, 1.0f, 1.0f,
-
   };
   
   int vertexArrayObjectId;
@@ -131,7 +132,8 @@ public class HelloWorld extends SingleWindowScene {
   
   // uniforms
   int offsetLocation;
-
+  int perspectiveMatrixUnif;
+  
   public static void main(String[] argv) {
     new HelloWorld().run();
   }
@@ -147,7 +149,8 @@ public class HelloWorld extends SingleWindowScene {
     
     //
     offsetLocation = glGetUniformLocation(programId, "offset");
-    
+    perspectiveMatrixUnif = glGetUniformLocation(programId, "perspectiveMatrix");
+
     // Clean up the shaders
     shaders.values().stream().forEach(shaderId -> {
       glDeleteShader(shaderId);
@@ -164,6 +167,30 @@ public class HelloWorld extends SingleWindowScene {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CW);
+    
+    /*
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+    glDepthRange(0.0f, 1.0f);
+     */
+
+    // set up perspective matrix
+    // Based on http://wiki.lwjgl.org/index.php?title=The_Quad_with_Projection,_View_and_Model_matrices#Projection_matrix
+    // and http://www.arcsynthesis.org/gltut/Positioning/Tut04%20The%20Matrix%20Has%20You.html
+    float frustumScale = 1.0f;
+    float zNear = 0.5f;
+    float zFar = 3.0f;
+
+    matrixBuffer = BufferUtils.createFloatBuffer(4*4);
+    Matrix4f matrix = new Matrix4f();
+    matrix.m00 = frustumScale; // / ((float)width / (float)height);
+    matrix.m11 = frustumScale; // 5
+    matrix.m22 = (zFar + zNear) / (zNear - zFar); // 10
+    matrix.m23 = -1.0f; // 11
+    matrix.m32 = (2 * zFar * zNear) / (zNear - zFar); // 14
+    matrix.store(matrixBuffer);
+    matrixBuffer.flip();
   }
 
   private int initVertexBuffer(float[] vertexPositions) {
@@ -197,7 +224,12 @@ public class HelloWorld extends SingleWindowScene {
     
     // set up state
     glUseProgram(programId);
+    
+    // set uniforms
     glUniform2f(offsetLocation, 0.5f, 0.5f);
+    
+    glUniformMatrix4(perspectiveMatrixUnif, false, matrixBuffer);
+
     glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);

@@ -7,8 +7,8 @@ import org.lwjgl.opengl.PixelFormat;
 import static org.lwjgl.opengl.GL11.glViewport;
 
 public abstract class SingleWindowScene implements Runnable {
-  private final int width;
-  private final int height;
+  protected int width;
+  protected int height;
   private final int openGlMajorVersion;
   private final int openGlMinorVersion;
 
