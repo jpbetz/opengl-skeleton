@@ -11,6 +11,8 @@ public abstract class SingleWindowScene implements Runnable {
   private final int height;
   private final int openGlMajorVersion;
   private final int openGlMinorVersion;
+
+  protected double lastFrameTime;
   
   public SingleWindowScene(int width, int height, int openGlMajorVersion, int openGlMinorVersion) {
     this.width = width;
@@ -24,10 +26,12 @@ public abstract class SingleWindowScene implements Runnable {
     try {
       configure();
       init();
+      lastFrameTime = getTime();
 
       while (!Display.isCloseRequested()) {
         // Clear the screen and depth buffer
-        display();
+        double deltaTime = getDeltaTime();
+        display(deltaTime);
       }
       Display.destroy();
     } catch (Throwable t) {
@@ -54,5 +58,17 @@ public abstract class SingleWindowScene implements Runnable {
   }
 
   protected abstract void init();
-  protected abstract void display();
+  protected abstract void display(double delta);
+
+  public double getTime() {
+    return System.nanoTime() / 1000000000.0;
+  }
+
+  private double getDeltaTime() {
+    double time = getTime();
+    int delta = (int) (time - lastFrameTime);
+    lastFrameTime = time;
+
+    return delta;
+  }
 }
