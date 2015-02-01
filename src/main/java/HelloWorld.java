@@ -25,12 +25,105 @@ public class HelloWorld extends SingleWindowScene {
   String fragmentShader = "src/main/shaders/fragment_basic.glsl";
 
   float vertexPositions[] = {
-      0.0f,    0.5f, 0.0f, 1.0f,
-      0.5f, -0.366f, 0.0f, 1.0f,
-      -0.5f, -0.366f, 0.0f, 1.0f,
-      1.0f,    0.0f, 0.0f, 1.0f,
-      0.0f,    1.0f, 0.0f, 1.0f,
-      0.0f,    0.0f, 1.0f, 1.0f,
+      0.25f,  0.25f, 0.75f, 1.0f,
+      0.25f, -0.25f, 0.75f, 1.0f,
+      -0.25f,  0.25f, 0.75f, 1.0f,
+
+      0.25f, -0.25f, 0.75f, 1.0f,
+      -0.25f, -0.25f, 0.75f, 1.0f,
+      -0.25f,  0.25f, 0.75f, 1.0f,
+
+      0.25f,  0.25f, -0.75f, 1.0f,
+      -0.25f,  0.25f, -0.75f, 1.0f,
+      0.25f, -0.25f, -0.75f, 1.0f,
+
+      0.25f, -0.25f, -0.75f, 1.0f,
+      -0.25f,  0.25f, -0.75f, 1.0f,
+      -0.25f, -0.25f, -0.75f, 1.0f,
+
+      -0.25f,  0.25f,  0.75f, 1.0f,
+      -0.25f, -0.25f,  0.75f, 1.0f,
+      -0.25f, -0.25f, -0.75f, 1.0f,
+
+      -0.25f,  0.25f,  0.75f, 1.0f,
+      -0.25f, -0.25f, -0.75f, 1.0f,
+      -0.25f,  0.25f, -0.75f, 1.0f,
+
+      0.25f,  0.25f,  0.75f, 1.0f,
+      0.25f, -0.25f, -0.75f, 1.0f,
+      0.25f, -0.25f,  0.75f, 1.0f,
+
+      0.25f,  0.25f,  0.75f, 1.0f,
+      0.25f,  0.25f, -0.75f, 1.0f,
+      0.25f, -0.25f, -0.75f, 1.0f,
+
+      0.25f,  0.25f, -0.75f, 1.0f,
+      0.25f,  0.25f,  0.75f, 1.0f,
+      -0.25f,  0.25f,  0.75f, 1.0f,
+
+      0.25f,  0.25f, -0.75f, 1.0f,
+      -0.25f,  0.25f,  0.75f, 1.0f,
+      -0.25f,  0.25f, -0.75f, 1.0f,
+
+      0.25f, -0.25f, -0.75f, 1.0f,
+      -0.25f, -0.25f,  0.75f, 1.0f,
+      0.25f, -0.25f,  0.75f, 1.0f,
+
+      0.25f, -0.25f, -0.75f, 1.0f,
+      -0.25f, -0.25f, -0.75f, 1.0f,
+      -0.25f, -0.25f,  0.75f, 1.0f,
+
+
+
+
+      0.0f, 0.0f, 1.0f, 1.0f,
+      0.0f, 0.0f, 1.0f, 1.0f,
+      0.0f, 0.0f, 1.0f, 1.0f,
+
+      0.0f, 0.0f, 1.0f, 1.0f,
+      0.0f, 0.0f, 1.0f, 1.0f,
+      0.0f, 0.0f, 1.0f, 1.0f,
+
+      0.8f, 0.8f, 0.8f, 1.0f,
+      0.8f, 0.8f, 0.8f, 1.0f,
+      0.8f, 0.8f, 0.8f, 1.0f,
+
+      0.8f, 0.8f, 0.8f, 1.0f,
+      0.8f, 0.8f, 0.8f, 1.0f,
+      0.8f, 0.8f, 0.8f, 1.0f,
+
+      0.0f, 1.0f, 0.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 1.0f,
+
+      0.0f, 1.0f, 0.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 1.0f,
+
+      0.5f, 0.5f, 0.0f, 1.0f,
+      0.5f, 0.5f, 0.0f, 1.0f,
+      0.5f, 0.5f, 0.0f, 1.0f,
+
+      0.5f, 0.5f, 0.0f, 1.0f,
+      0.5f, 0.5f, 0.0f, 1.0f,
+      0.5f, 0.5f, 0.0f, 1.0f,
+
+      1.0f, 0.0f, 0.0f, 1.0f,
+      1.0f, 0.0f, 0.0f, 1.0f,
+      1.0f, 0.0f, 0.0f, 1.0f,
+
+      1.0f, 0.0f, 0.0f, 1.0f,
+      1.0f, 0.0f, 0.0f, 1.0f,
+      1.0f, 0.0f, 0.0f, 1.0f,
+
+      0.0f, 1.0f, 1.0f, 1.0f,
+      0.0f, 1.0f, 1.0f, 1.0f,
+      0.0f, 1.0f, 1.0f, 1.0f,
+
+      0.0f, 1.0f, 1.0f, 1.0f,
+      0.0f, 1.0f, 1.0f, 1.0f,
+      0.0f, 1.0f, 1.0f, 1.0f,
+
   };
   
   int vertexArrayObjectId;
@@ -66,6 +159,11 @@ public class HelloWorld extends SingleWindowScene {
     // create a vertex array
     vertexArrayObjectId = glGenVertexArrays();
     glBindVertexArray(vertexArrayObjectId);
+    
+    // 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
   }
 
   private int initVertexBuffer(float[] vertexPositions) {
@@ -99,15 +197,18 @@ public class HelloWorld extends SingleWindowScene {
     
     // set up state
     glUseProgram(programId);
-    glUniform2f(offsetLocation, offset.getX(), offset.getY());
+    glUniform2f(offsetLocation, 0.5f, 0.5f);
     glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     // Define the format and source of the vertex data.
     glVertexAttribPointer(0, 4, GL_FLOAT, false, 0, 0);
-    glVertexAttribPointer(1, 4, GL_FLOAT, false, 0, 48);
+    
+    // TODO: is there a better way to get this offset?  Maybe a byte buffer view?
+    int colorDataOffset = vertexPositions.length * Float.BYTES / 2;
+    glVertexAttribPointer(1, 4, GL_FLOAT, false, 0, colorDataOffset /* offset is in bytes */);
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     // clean up state
     glDisableVertexAttribArray(0);
