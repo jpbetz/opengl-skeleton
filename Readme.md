@@ -2,7 +2,7 @@ A gradle skeleton project for full access to OpenGL on the JVM.  The main thing 
 dependency to [LWJGL](http://www.lwjgl.org/),  the same OpenGL bindings used by Minecraft.  This dependency is not
 entirely trivial because LWJGL uses JNI.
 
-SBT users,  see [sbt-lwjgl-plugin](https://github.com/philcali/sbt-lwjgl-plugin).
+SBT users,  see [sbt-lwjgl-plugin](https://github.com/philcali/sbt-lwjgl-plugin).  This currently uses gradle.
 
 [gradle-natives plugin](https://github.com/cjstehno/gradle-natives) is used to load
 LWJGL native binaries for the correct platform.  This was documented fairly well on the web
@@ -18,7 +18,8 @@ An HelloWorld class using [LWJGL](http://www.lwjgl.org/) is included to display 
 Dependencies
 ------------
 
-* Java 8 (Java 6+ may work, have not tested)
+* Java JDK 1.7.*
+* Scala 2.11.*
 * Gradle 2.2.1+ (older may work, have not tested)
 * Platforms supported are: 'osx', 'linux', 'windows'
 
@@ -33,7 +34,15 @@ To run the app from the command line, modify the run task in build.gradle to use
 
     gradle run
 
-To Run from intelliJ,  set the "VM Options" for any Run/Debug Configuration to:
+To Run from intelliJ:
+
+1. Generate an idea project:
+
+    gradle idea
+
+2. Change the the SDK to Java 1.8 in the IntelliJ "project settings".
+
+3. Set the "VM Options" for any Run/Debug Configuration to:
 
     -Djava.library.path=build/natives/osx
 
