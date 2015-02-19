@@ -19,7 +19,7 @@ Dependencies
 ------------
 
 * Java JDK 1.7.*
-* Scala 2.11.*
+* Scala 2.10.*
 * Gradle 2.2.1+ (older may work, have not tested)
 * Platforms supported are: 'osx', 'linux', 'windows'
 

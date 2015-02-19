@@ -26,38 +26,26 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
   override protected def init(): Unit = {
     programState.init()
-    arrayDataState.init()
+    triangleData.init()
   }
 
   override protected def display(deltaTime: Double) {
     val withProgram = clear.push(programState)
-    val withArrayData = withProgram.push(arrayDataState)
+    val withTriangleData = withProgram.push(triangleData)
 
-    withArrayData.run {
+    withTriangleData.run {
       //println(s"drawing ${faceVertices.length} vertices")
       glDrawElements(GL_TRIANGLES, faceVertices.length, GL_UNSIGNED_BYTE, 0)
     }
-    
+
     //Display.sync(60) // Force max rate of about 60 FPS
     Display.update()
-  }
-
-  def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
-    val matrixBuffer = BufferUtils.createFloatBuffer(4 * 4)
-    val matrix = new Matrix4f()
-    matrix.m00 = frustumScale
-    matrix.m11 = frustumScale
-    matrix.m22 = (zFar + zNear) / (zNear - zFar)
-    matrix.m23 = -1.0f
-    matrix.m32 = (2 * zFar * zNear) / (zNear - zFar)
-    matrix.store(matrixBuffer)
-    matrixBuffer.flip()
-    matrixBuffer
   }
 
   val clear = new State() {
     override def begin() {
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
+      glClearDepth(1.0f)
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     }
   }
@@ -69,6 +57,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     val vertexShader = "src/main/shaders/MatrixPerspective.vert"
     val fragmentShader = "src/main/shaders/fragment_basic.glsl"
     val matrixBuffer = createPerspectiveMatrix(frustumScale = 1.00f, zNear = 0.0001f, zFar = 10000.0f)
+
     override def init() {
       val shaders = mutable.Map[Int, Int]()
       shaders.put(GL_VERTEX_SHADER, ShaderLoader.createShader(vertexShader, GL_VERTEX_SHADER))
@@ -90,6 +79,19 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     override def end() {
       glUseProgram(0)
     }
+
+    def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
+      val matrixBuffer = BufferUtils.createFloatBuffer(4 * 4)
+      val matrix = new Matrix4f()
+      matrix.m00 = frustumScale
+      matrix.m11 = frustumScale
+      matrix.m22 = (zFar + zNear) / (zNear - zFar)
+      matrix.m23 = -1.0f
+      matrix.m32 = (2 * zFar * zNear) / (zNear - zFar)
+      matrix.store(matrixBuffer)
+      matrixBuffer.flip()
+      matrixBuffer
+    }
   }
 
   //val modelFile = "src/main/resources/wt_teapot.obj"
@@ -104,7 +106,6 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     0.5f, -0.5f, 0f,    // Right bottom     ID: 2
     0.5f, 0.5f, 0f      // Right left       ID: 3
   )*/
-  
   val faceVertices = model.faceIndicesArray
   /*val faceVertices = Array[Byte](
     // Left bottom triangle
@@ -113,7 +114,8 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     2, 3, 0
   )*/
 
-  val arrayDataState = new State() {
+
+  val triangleData = new State() {
     var vertexArrayObjectId = 0
     var elementBufferId = 0
     var positionBufferObject = 0 // TODO: figure out how to propagate this from init to begin
@@ -142,7 +144,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       println(s"""loaded facesBuffer with ${faceVertices.length} faces: ${faceVertices.mkString(",")}""")
       facesBuffer.put(faceVertices)
       facesBuffer.flip()
-      
+
       elementBufferId = glGenBuffers()
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, facesBuffer, GL_STATIC_DRAW)
@@ -153,13 +155,13 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       // vertices
       glBindVertexArray(vertexArrayObjectId)
       glEnableVertexAttribArray(0)
-      
+
       // elements
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
     }
 
     override def end() {
-      
+
       // elements
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
