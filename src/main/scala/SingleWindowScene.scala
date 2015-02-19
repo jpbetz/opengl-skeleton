@@ -17,7 +17,7 @@ abstract class SingleWindowScene(width: Int, height: Int, openGlMajorVersion: In
       init()
       lastFrameTime = getTime
       while (!Display.isCloseRequested) {
-        val deltaTime: Double = getDeltaTime
+        val deltaTime: Float = getDeltaTime
         display(deltaTime)
       }
       Display.destroy()
@@ -45,13 +45,13 @@ abstract class SingleWindowScene(width: Int, height: Int, openGlMajorVersion: In
 
   protected def init(): Unit
 
-  protected def display(delta: Double)
+  protected def display(delta: Float)
 
   def getTime: Double = {
     System.nanoTime / 1000000000.0
   }
 
-  private def getDeltaTime: Double = {
+  private def getDeltaTime: Float = {
     val time: Double = getTime
     val delta: Int = (time - lastFrameTime).toInt
     lastFrameTime = time

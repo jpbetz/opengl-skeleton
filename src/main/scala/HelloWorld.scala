@@ -6,8 +6,10 @@ import java.io.{FileInputStream, File}
 import model.BlenderLoader
 import opengl.ShaderLoader
 import org.lwjgl.BufferUtils
+import org.lwjgl.input.{Mouse, Keyboard}
 import org.lwjgl.opengl.Display
-import org.lwjgl.util.vector.Matrix4f
+import org.lwjgl.util.glu.GLU
+import org.lwjgl.util.vector.{Quaternion, Vector3f, Matrix4f}
 import java.nio.FloatBuffer
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL15._
@@ -24,14 +26,49 @@ object HelloWorld extends App {
 
 class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
+  def degreesToRadians(degrees: Float): Float = {
+    degrees * math.Pi.toFloat / 180
+  }
+
+  var cameraPosition = new Vector3f(0f, 0f, -3f)
+  var cameraAngle = new Vector3f() // TODO: how to use a Quaternion here?
+  def viewMatrix = {
+    val matrix = new Matrix4f()
+    matrix.rotate(degreesToRadians(cameraAngle.z), new Vector3f(0, 0, 1))
+    matrix.rotate(degreesToRadians(cameraAngle.y), new Vector3f(0, 1, 0))
+    matrix.rotate(degreesToRadians(cameraAngle.x), new Vector3f(1, 0, 0))
+    matrix.translate(cameraPosition)
+  }
+
+  val rotationDelta = 0.1f
+  val scaleDelta = 0.1f
+  val posDelta = 0.1f
+
   override protected def init(): Unit = {
     programState.init()
     triangleData.init()
   }
 
-  override protected def display(deltaTime: Double) {
+  override protected def display(deltaTime: Float) {
     val withProgram = clear.push(programState)
     val withTriangleData = withProgram.push(triangleData)
+
+    if(Mouse.isButtonDown(0)) {
+      cameraAngle.y += -Mouse.getDX() * rotationDelta
+      cameraAngle.normalise(null)
+      cameraAngle.x += Mouse.getDY() * rotationDelta
+      cameraAngle.normalise(null)
+    }
+
+    // TODO: make movement relative to camera angle
+    if(Keyboard.isKeyDown(Keyboard.KEY_UP)) cameraPosition.translate(0, posDelta, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) cameraPosition.translate(0, -posDelta, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) cameraPosition.translate(posDelta, 0, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_LEFT)) cameraPosition.translate(-posDelta, 0, 0)
+
+    if(Mouse.isButtonDown(1)) {
+      cameraPosition.translate(0, 0, Mouse.getDY() * posDelta)
+    }
 
     withTriangleData.run {
       //println(s"drawing ${faceVertices.length} vertices")
@@ -51,19 +88,19 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
   }
 
   val programState = new State() {
-    var offsetLocation = 0
+    var cameraViewMatrixUnif = 0
     var perspectiveMatrixUnif = 0
     var programId = 0
     val vertexShader = "src/main/shaders/MatrixPerspective.vert"
     val fragmentShader = "src/main/shaders/fragment_basic.glsl"
-    val matrixBuffer = createPerspectiveMatrix(frustumScale = 1.00f, zNear = 0.0001f, zFar = 10000.0f)
+    val perspectiveMatrixBuffer = createPerspectiveMatrix(frustumScale = 1.00f, zNear = 0.0001f, zFar = 10000.0f)
 
     override def init() {
       val shaders = mutable.Map[Int, Int]()
       shaders.put(GL_VERTEX_SHADER, ShaderLoader.createShader(vertexShader, GL_VERTEX_SHADER))
       shaders.put(GL_FRAGMENT_SHADER, ShaderLoader.createShader(fragmentShader, GL_FRAGMENT_SHADER))
       programId = ShaderLoader.initializeProgram(shaders.asJava)
-      offsetLocation = glGetUniformLocation(programId, "offset")
+      cameraViewMatrixUnif = glGetUniformLocation(programId, "cameraViewMatrix")
       perspectiveMatrixUnif = glGetUniformLocation(programId, "perspectiveMatrix")
       shaders.values foreach { shaderId =>
         glDeleteShader(shaderId)
@@ -72,8 +109,8 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
     override def begin() {
       glUseProgram(programId)
-      glUniform3f(offsetLocation, 0.0f, 0.0f, -3.0f)
-      glUniformMatrix4(perspectiveMatrixUnif, false, matrixBuffer)
+      glUniformMatrix4(cameraViewMatrixUnif, false, matrixToBuffer(viewMatrix))
+      glUniformMatrix4(perspectiveMatrixUnif, false, perspectiveMatrixBuffer)
     }
 
     override def end() {
@@ -92,12 +129,19 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       matrixBuffer.flip()
       matrixBuffer
     }
+
+    def matrixToBuffer(matrix: Matrix4f) = {
+      val matrixBuffer = BufferUtils.createFloatBuffer(4 * 4)
+      matrix.store(matrixBuffer)
+      matrixBuffer.flip()
+      matrixBuffer
+    }
   }
 
   //val modelFile = "src/main/resources/wt_teapot.obj"
   //val modelFile = "src/main/resources/quad.obj"
-  //val modelFile = "src/main/resources/monkey.obj"
-  val modelFile = "src/main/resources/sphere.obj"
+  val modelFile = "src/main/resources/monkey.obj"
+  //val modelFile = "src/main/resources/sphere.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
   val vertexPositions = model.verticesArray
   /*val vertexPositions = Array[Float](
