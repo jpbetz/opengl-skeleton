@@ -94,7 +94,8 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
   //val modelFile = "src/main/resources/wt_teapot.obj"
   //val modelFile = "src/main/resources/quad.obj"
-  val modelFile = "src/main/resources/monkey.obj"
+  //val modelFile = "src/main/resources/monkey.obj"
+  val modelFile = "src/main/resources/sphere.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
   val vertexPositions = model.verticesArray
   /*val vertexPositions = Array[Float](
@@ -104,7 +105,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     0.5f, 0.5f, 0f      // Right left       ID: 3
   )*/
   
-  val faceVertices = model.faceVerticesArray
+  val faceVertices = model.faceIndicesArray
   /*val faceVertices = Array[Byte](
     // Left bottom triangle
     0, 1, 2,
@@ -123,7 +124,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
       // vertices
       val vertexPositionsBuffer = BufferUtils.createFloatBuffer(vertexPositions.length)
-      println(s"""loaded vertexPositionsBuffer with: ${vertexPositions.mkString(",")}""")
+      println(s"""loaded vertexPositionsBuffer with ${vertexPositions.length} vertices: ${vertexPositions.mkString(",")}""")
       vertexPositionsBuffer.put(vertexPositions)
       vertexPositionsBuffer.flip()
 
@@ -138,7 +139,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
       // elements
       val facesBuffer = BufferUtils.createByteBuffer(faceVertices.length)
-      println(s"""loaded facesBuffer with: ${faceVertices.mkString(",")}""")
+      println(s"""loaded facesBuffer with ${faceVertices.length} faces: ${faceVertices.mkString(",")}""")
       facesBuffer.put(faceVertices)
       facesBuffer.flip()
       

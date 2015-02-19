@@ -14,8 +14,10 @@ case class Model(faces: Faces, vertices: List[Vertex], normals: List[Normal], uv
     tuples.flatten.toArray
   }
 
-  def faceVerticesArray: Array[Byte] = {
-    faces.faces.flatMap(_.vertexIndices.toArray).map(v => (v & 0xff).toByte).toArray
+  def faceIndicesArray: Array[Byte] = {
+    // opengl expects 0 based indices, but blender object files use 1 based indices
+    // also, lwjgl needs indices to be unsigned, so we used unsigned bytes
+    faces.faces.flatMap(_.vertexIndices.toArray).map(v => ((v-1) & 0xff).toByte).toArray
   }
   
   def verticesArray: Array[Float] = {
@@ -106,10 +108,6 @@ object BlenderLoader {
     
     // Element Data
     def faceParser: Parser[Faces] = "f" ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser.* ^^ {
-      case f~p1~p2~p3~Nil => {
-        val faceIndices = FaceIndices(p1, p2, p3)
-        Faces(List(Face(faceIndices.vertexIndices, faceIndices.uvIndices, faceIndices.normalIndices)))
-      }
       case f~p1~p2~p3~rest => {
         val faceIndexList = p1 :: p2 :: p3 :: rest
         val faces = faceIndexList.sliding(3) map { case List(_p1, _p2, _p3) =>
