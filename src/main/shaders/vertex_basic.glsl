@@ -1,12 +1,12 @@
 #version 330
-layout(location = 0) in vec4 position;
-layout(location = 1) in vec4 color;
+layout(location = 0) in vec3 position;
+//layout(location = 1) in vec4 color;
 
 smooth out vec4 theColor;
 uniform vec2 offset;
 
 void main()
 {
-  gl_Position = position + vec4(offset.x, offset.y, 0.0, 0.0);
-  theColor = color;
+  gl_Position = vec4(position + offset, 0.0, 0.0);
+  theColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

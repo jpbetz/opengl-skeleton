@@ -1,0 +1,14 @@
+o quad
+# Top Left
+v -0.25 0.25 -1.0
+# Bottom Left
+v -0.25 -0.25 -1.0
+# Bottom Right
+v 0.25 -0.25 -1.0
+# Top Right
+v 0.25 0.25 -1.0
+
+vn 0 0 1
+# Front faces
+f 0//0 1//0 2//0
+f 2//0 3//0 0//0
