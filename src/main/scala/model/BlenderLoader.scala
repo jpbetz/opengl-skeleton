@@ -6,7 +6,7 @@ import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
 
-case class Model(faces: List[Face], vertices: List[Vertex], normals: List[Normal], uvs: List[UV]) {
+case class Model(faces: Faces, vertices: List[Vertex], normals: List[Normal], uvs: List[UV]) {
   private def toArray(vectors: List[Vector3f]): Array[Float] = {
     val tuples = vectors map { vector =>
       List(vector.x, vector.y, vector.z)
@@ -15,7 +15,7 @@ case class Model(faces: List[Face], vertices: List[Vertex], normals: List[Normal
   }
 
   def faceVerticesArray: Array[Byte] = {
-    faces.flatMap(_.vertexIndices.toArray).map(v => (v & 0xff).toByte).toArray
+    faces.faces.flatMap(_.vertexIndices.toArray).map(v => (v & 0xff).toByte).toArray
   }
   
   def verticesArray: Array[Float] = {
@@ -35,7 +35,9 @@ sealed trait BlenderLine
 case class Vertex(vertex: Vector3f) extends BlenderLine
 case class Normal(normal: Vector3f) extends BlenderLine
 case class UV(uv: Vector3f) extends BlenderLine
-case class Face(vertexIndices: TriangleIndices, uvIndices: Option[TriangleIndices], normalIndices: Option[TriangleIndices]) extends BlenderLine
+
+case class Face(vertexIndices: TriangleIndices, uvIndices: Option[TriangleIndices], normalIndices: Option[TriangleIndices])
+case class Faces(faces: List[Face]) extends BlenderLine
 
 case class TriangleIndices(p1: Int, p2: Int, p3: Int) {
   def toArray = List(p1, p2, p3)
@@ -66,8 +68,10 @@ case class ObjectGrouping(name: String) extends BlenderLine
 sealed trait SmoothingGroup extends BlenderLine
 case object SmoothingGroupOff extends SmoothingGroup
 case class SmoothingGroupValue(value: String) extends SmoothingGroup
-
+case class Usemtl(value: String) extends BlenderLine
 case class FaceIndex(vertex: Int, uv: Option[Int], normal: Option[Int])
+
+case class Mtllib(value: String) extends BlenderLine
 
 /**
  * See http://www.martinreddy.net/gfx/3d/OBJ.spec
@@ -84,8 +88,9 @@ object BlenderLoader {
     }
 
     // Vertex Data
-    def faceIndexParser: Parser[FaceIndex] = intParser ~ "/" ~ intParser.? ~ "/" ~ intParser.? ^^ {
-      case vertex~_~uv~_~normal => FaceIndex(vertex, uv, normal)
+    def faceIndexParser: Parser[FaceIndex] = intParser ~ ("/" ~ intParser.? ~ "/" ~ intParser.?).? ^^ {
+      case vertex~Some(_~uv~_~normal) => FaceIndex(vertex, uv, normal)
+      case vertex~None => FaceIndex(vertex, None, None)
     }
     def vertexParser: Parser[Vertex] = "v" ~ vector3fParser ^^ {
       case v~vector3f => Vertex(vector3f)
@@ -100,10 +105,18 @@ object BlenderLoader {
     }
     
     // Element Data
-    def faceParser: Parser[Face] = "f" ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser ^^ {
-      case f~xFaceIndex~yFaceIndex~zFaceIndex => {
-        val faceIndices = FaceIndices(xFaceIndex, yFaceIndex, zFaceIndex)
-        Face(faceIndices.vertexIndices, faceIndices.uvIndices, faceIndices.normalIndices)
+    def faceParser: Parser[Faces] = "f" ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser.* ^^ {
+      case f~p1~p2~p3~Nil => {
+        val faceIndices = FaceIndices(p1, p2, p3)
+        Faces(List(Face(faceIndices.vertexIndices, faceIndices.uvIndices, faceIndices.normalIndices)))
+      }
+      case f~p1~p2~p3~rest => {
+        val faceIndexList = p1 :: p2 :: p3 :: rest
+        val faces = faceIndexList.sliding(3) map { case List(_p1, _p2, _p3) =>
+          val faceIndices = FaceIndices(_p1, _p2, _p3)
+          Face(faceIndices.vertexIndices, faceIndices.uvIndices, faceIndices.normalIndices)
+        }
+        Faces(faces.toList)
       }
     }
     
@@ -118,8 +131,16 @@ object BlenderLoader {
       case s~value => SmoothingGroupValue(value)
     }
     
+    def usemtlParser: Parser[Usemtl] = "usemtl" ~ """.*""".r ^^ {
+      case usemtl~value => Usemtl(value)
+    }
+
+    def mtllibParser: Parser[Mtllib] = "mtllib" ~ """.*""".r ^^ {
+      case mtllib~value => Mtllib(value)
+    }
+    
     // Top Level Parser
-    def lineParser = normalParser | textureVertexParser | smoothingGroupParser | vertexParser | objectParser | faceParser
+    def lineParser = usemtlParser | mtllibParser | normalParser | textureVertexParser | smoothingGroupParser | vertexParser | objectParser | faceParser
     
     def fileParser = lineParser.*
     
@@ -137,7 +158,8 @@ object BlenderLoader {
     println(vertices)
     val uvs = parsedLines.filter(_.isInstanceOf[UV]).map(_.asInstanceOf[UV]).toList
     val normals = parsedLines.filter(_.isInstanceOf[Normal]).map(_.asInstanceOf[Normal]).toList
-    val faces = parsedLines.filter(_.isInstanceOf[Face]).map(_.asInstanceOf[Face]).toList
+    val facesList = parsedLines.filter(_.isInstanceOf[Faces]).map(_.asInstanceOf[Faces]).toList
+    val faces = Faces(facesList.flatMap(_.faces))
     println("faces: ")
     println(faces)
     Model(faces, vertices, normals, uvs)

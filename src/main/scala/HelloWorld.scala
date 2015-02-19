@@ -92,8 +92,9 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
   }
 
-  val modelFile = "src/main/resources/wt_teapot.obj"
+  //val modelFile = "src/main/resources/wt_teapot.obj"
   //val modelFile = "src/main/resources/quad.obj"
+  val modelFile = "src/main/resources/monkey.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
   val vertexPositions = model.verticesArray
   /*val vertexPositions = Array[Float](
