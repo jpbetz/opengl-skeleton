@@ -144,13 +144,9 @@ object BlenderLoader {
     val inputText = Source.fromInputStream(in).mkString
     val parsedLines = Parser(inputText)
     val vertices = parsedLines.filter(_.isInstanceOf[Vertex]).map(_.asInstanceOf[Vertex]).toArray
-    println("vertices: ")
-    println(vertices)
     val uvs = parsedLines.filter(_.isInstanceOf[UV]).map(_.asInstanceOf[UV]).toArray
     val normals = parsedLines.filter(_.isInstanceOf[Normal]).map(_.asInstanceOf[Normal]).toArray
     val faces = parsedLines.filter(_.isInstanceOf[Face]).map(_.asInstanceOf[Face]).toArray
-    println("faces: ")
-    println(faces)
     Model(faces, vertices, normals, uvs)
   }
 }
