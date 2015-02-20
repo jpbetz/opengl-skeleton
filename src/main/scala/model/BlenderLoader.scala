@@ -5,35 +5,50 @@ import org.lwjgl.util.vector.Vector3f
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
-case class Model(faces: List[Face], vertices: List[Vertex], normals: List[Normal], uvs: List[UV]) {
-  private def toArray(vectors: List[Vector3f]): Array[Float] = {
-    val tuples = vectors map { vector =>
-      List(vector.x, vector.y, vector.z)
+case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Normal], uvs: Array[UV]) {
+  val faceIds: Map[FaceIndex, Int] = faces.flatMap(_.faceIndices).toSet.zipWithIndex.toMap
+
+  private def toArray(vectors: Array[Vector3f]): Array[Float] = {
+    vectors.map(toFloats).flatten.toArray
+  }
+
+  private def toFloats(vector: Vector3f): List[Float] = {
+    List(vector.x, vector.y, vector.z)
+  }
+
+  // lwjgl needs indices to be unsigned, so we used unsigned shorts
+  private def toUnsignedShort(value: Int): Short = ((value) & 0xffff).toShort
+
+  /**
+   * Indices are provided in GL_TRIANGLE_FAN order and are terminated by BlenderLoader.PRIMITIVE_RESTART
+   * See glPrimitiveRestartIndex for details.
+   * @return
+   */
+  def triangleFanArrayElementIndices: Array[Short] = {
+    val indices = faces flatMap { face =>
+      val indicesAsShorts = face.faceIndices.map(f => toUnsignedShort(faceIds(f)))
+      indicesAsShorts ++ List(BlenderLoader.PRIMITIVE_RESTART)
     }
-    tuples.flatten.toArray
+    indices.toArray
   }
 
-  // We need a primitive restart in order to use GL Triangle Fan layout with a buffer array
+  /**
+   * Interleaved vertices and normals.  3 floats for a vertex followed by 3 floats for a normal.
+   * @return
+   */
+  def interleavedDataArray: Array[Float] = {
 
-
-  // opengl expects 0 based indices, but blender object files use 1 based indices
-  // also, lwjgl needs indices to be unsigned, so we used unsigned bytes
-  private def toUnsignedShort(value: Int): Short = ((value-1) & 0xffff).toShort
-
-  def faceIndicesTriangleFanArray: Array[Short] = {
-    faces.flatMap(_.vertexIndices.indices.map(toUnsignedShort) ++ List(BlenderLoader.PRIMITIVE_RESTART)).toArray
-  }
-
-  def verticesArray: Array[Float] = {
-    toArray(vertices.map(_.vertex))
-  }
-
-  def normalsArray: Array[Float] = {
-    toArray(normals.map(_.normal))
-  }
-
-  def uvsArray: Array[Float] = {
-    toArray(uvs.map(_.uv))
+    val entries = faces flatMap { face =>
+      face.faceIndices.map(f => (faceIds(f), (f.vertex, f.normal)))
+    }
+    // remove duplicates, order by face id
+    val sortedFaceIndices = entries.toMap.toList.sortBy(_._1).map(_._2)
+    val data = sortedFaceIndices flatMap { case (vertexId, normalId) =>
+      val vertex = vertices(vertexId-1).vertex
+      val normal = normalId.map(n => normals(n-1).normal).getOrElse(new Vector3f(0f, 0f, 0f))
+      toFloats(vertex) ++ toFloats(normal)
+    }
+    data.toArray
   }
 }
 
@@ -42,23 +57,8 @@ case class Vertex(vertex: Vector3f) extends BlenderLine
 case class Normal(normal: Vector3f) extends BlenderLine
 case class UV(uv: Vector3f) extends BlenderLine
 
-case class Face(vertexIndices: TriangleFanIndices, uvIndices: TriangleFanIndices, normalIndices: TriangleFanIndices) extends BlenderLine
+case class Face(faceIndices: List[FaceIndex]) extends BlenderLine
 
-case class TriangleFanIndices(indices: List[Int])
-
-case class FaceIndices(indices: List[FaceIndex]) {
-  def vertexIndices = {
-    TriangleFanIndices(indices.map(_.vertex))
-  }
-
-  def uvIndices = {
-    TriangleFanIndices(indices.flatMap(_.uv))
-  }
-
-  def normalIndices = {
-    TriangleFanIndices(indices.flatMap(_.normal))
-  }
-}
 case class ObjectGrouping(name: String) extends BlenderLine
 
 sealed trait SmoothingGroup extends BlenderLine
@@ -106,8 +106,7 @@ object BlenderLoader {
     def faceParser: Parser[Face] = "f" ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser ~ faceIndexParser.* ^^ {
       case f~p1~p2~p3~rest => {
         val faceIndexList = p1 :: p2 :: p3 :: rest
-        val faceIndices = FaceIndices(faceIndexList)
-        Face(faceIndices.vertexIndices, faceIndices.uvIndices, faceIndices.normalIndices)
+        Face(faceIndexList)
       }
     }
 
@@ -144,12 +143,12 @@ object BlenderLoader {
   def loadModel(in: InputStream): Model = {
     val inputText = Source.fromInputStream(in).mkString
     val parsedLines = Parser(inputText)
-    val vertices = parsedLines.filter(_.isInstanceOf[Vertex]).map(_.asInstanceOf[Vertex]).toList
+    val vertices = parsedLines.filter(_.isInstanceOf[Vertex]).map(_.asInstanceOf[Vertex]).toArray
     println("vertices: ")
     println(vertices)
-    val uvs = parsedLines.filter(_.isInstanceOf[UV]).map(_.asInstanceOf[UV]).toList
-    val normals = parsedLines.filter(_.isInstanceOf[Normal]).map(_.asInstanceOf[Normal]).toList
-    val faces = parsedLines.filter(_.isInstanceOf[Face]).map(_.asInstanceOf[Face]).toList
+    val uvs = parsedLines.filter(_.isInstanceOf[UV]).map(_.asInstanceOf[UV]).toArray
+    val normals = parsedLines.filter(_.isInstanceOf[Normal]).map(_.asInstanceOf[Normal]).toArray
+    val faces = parsedLines.filter(_.isInstanceOf[Face]).map(_.asInstanceOf[Face]).toArray
     println("faces: ")
     println(faces)
     Model(faces, vertices, normals, uvs)

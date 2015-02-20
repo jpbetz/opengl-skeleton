@@ -174,32 +174,17 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
   }
 
   //val modelFile = "src/main/resources/quad.obj"
-  //val modelFile = "src/main/resources/monkey.obj"
-  val modelFile = "src/main/resources/sphere.obj"
+  val modelFile = "src/main/resources/monkey.obj"
+  //val modelFile = "src/main/resources/sphere.obj"
   //val modelFile = "src/main/resources/cube.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
-  val vertexPositions = model.verticesArray
-  /*val vertexPositions = Array[Float](
-    -0.5f, 0.5f, 0f,    // Left top         ID: 0
-    -0.5f, -0.5f, 0f,   // Left bottom      ID: 1
-    0.5f, -0.5f, 0f,    // Right bottom     ID: 2
-    0.5f, 0.5f, 0f      // Right left       ID: 3
-  )*/
-  val faceVertices = model.faceIndicesTriangleFanArray
-  /*val faceVertices = Array[Byte](
-    // Left bottom triangle
-    0, 1, 2,
-    // Right top triangle
-    2, 3, 0
-  )*/
-  val vertexNormals = model.normalsArray
-
+  val vertexAndNormals = model.interleavedDataArray
+  val faceVertices = model.triangleFanArrayElementIndices
 
   val triangleData = new State() {
     var vertexArrayObjectId = 0
     var elementBufferId = 0
-    var positionBufferObject = 0 // TODO: figure out how to propagate this from init to begin
-    var normalsBufferObject = 0 // TODO: figure out how to propagate this from init to begin
+    var verticesAndNormalsObjectId = 0 // TODO: figure out how to propagate this from init to begin
     override def init() {
       glEnable(GL_CULL_FACE)
       glCullFace(GL_BACK)
@@ -209,26 +194,16 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       vertexArrayObjectId = glGenVertexArrays()
       glBindVertexArray(vertexArrayObjectId)
 
-      // vertices
-      val vertexPositionsBuffer = BufferUtils.createFloatBuffer(vertexPositions.length)
-      println(s"""loaded vertexPositionsBuffer with ${vertexPositions.length} floats: ${vertexPositions.mkString(",")}""")
-      vertexPositionsBuffer.put(vertexPositions)
-      vertexPositionsBuffer.flip()
-      positionBufferObject = glGenBuffers()
-      glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject)
-      glBufferData(GL_ARRAY_BUFFER, vertexPositionsBuffer, GL_STATIC_DRAW)
-      glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0)
-      glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-      // normals
-      val vertexNormalsBuffer = BufferUtils.createFloatBuffer(vertexNormals.length)
-      println(s"""loaded vertexNormalsBuffer with ${vertexNormals.length} floats: ${vertexNormals.mkString(",")}""")
-      vertexNormalsBuffer.put(vertexNormals)
-      vertexNormalsBuffer.flip()
-      normalsBufferObject = glGenBuffers()
-      glBindBuffer(GL_ARRAY_BUFFER, normalsBufferObject)
-      glBufferData(GL_ARRAY_BUFFER, vertexNormalsBuffer, GL_STATIC_DRAW)
-      glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, 0)
+      // vertices and normals
+      val verticesAndNormalsBuffer = BufferUtils.createFloatBuffer(vertexAndNormals.length)
+      println(s"""loaded verticesAndNormalsBuffer with ${vertexAndNormals.length} floats: ${vertexAndNormals.mkString(",")}""")
+      verticesAndNormalsBuffer.put(vertexAndNormals)
+      verticesAndNormalsBuffer.flip()
+      verticesAndNormalsObjectId = glGenBuffers()
+      glBindBuffer(GL_ARRAY_BUFFER, verticesAndNormalsObjectId)
+      glBufferData(GL_ARRAY_BUFFER, verticesAndNormalsBuffer, GL_STATIC_DRAW)
+      glVertexAttribPointer(0, 3, GL_FLOAT, false, 6*java.lang.Float.BYTES, 0)
+      glVertexAttribPointer(1, 3, GL_FLOAT, false, 6*java.lang.Float.BYTES, 3*java.lang.Float.BYTES)
       glBindBuffer(GL_ARRAY_BUFFER, 0)
 
       // close the vertex array
@@ -243,7 +218,6 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       elementBufferId = glGenBuffers()
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, facesBuffer, GL_STATIC_DRAW)
-      //glVertexPointer(3, GL_FLOAT, sizeof(ObjMeshVertex), 0);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
     }
 
