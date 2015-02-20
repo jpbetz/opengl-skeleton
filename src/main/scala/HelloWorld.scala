@@ -33,12 +33,17 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
   var cameraPosition = new Vector3f(0f, 0f, -3f)
   var cameraAngle = new Vector3f() // TODO: how to use a Quaternion here?
-  def viewMatrix = {
+
+  var modelPosition = new Vector3f()
+  var modelAngle = new Vector3f()
+
+  def toMatrix(position: Vector3f, angle: Vector3f) = {
     val matrix = new Matrix4f()
-    matrix.rotate(degreesToRadians(cameraAngle.z), new Vector3f(0, 0, 1))
-    matrix.rotate(degreesToRadians(cameraAngle.y), new Vector3f(0, 1, 0))
-    matrix.rotate(degreesToRadians(cameraAngle.x), new Vector3f(1, 0, 0))
-    matrix.translate(cameraPosition)
+    matrix.rotate(degreesToRadians(angle.z), new Vector3f(0, 0, 1))
+    matrix.rotate(degreesToRadians(angle.y), new Vector3f(0, 1, 0))
+    matrix.rotate(degreesToRadians(angle.x), new Vector3f(1, 0, 0))
+    matrix.translate(position)
+    matrix
   }
 
   val rotationDelta = 0.1f
@@ -56,9 +61,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
     if(Mouse.isButtonDown(0)) {
       cameraAngle.y += -Mouse.getDX() * rotationDelta
-      cameraAngle.normalise(null)
       cameraAngle.x += Mouse.getDY() * rotationDelta
-      cameraAngle.normalise(null)
     }
 
     // TODO: make movement relative to camera angle
@@ -71,10 +74,10 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       cameraPosition.translate(0, 0, Mouse.getDY() * posDelta)
     }
 
+    modelAngle.y += rotationDelta*2
+
     withTriangleData.run {
       //println(s"drawing ${faceVertices.length} vertices")
-      glEnable(GL_PRIMITIVE_RESTART)
-      glPrimitiveRestartIndex(BlenderLoader.PRIMITIVE_RESTART)
       glDrawElements(GL_TRIANGLE_FAN, faceVertices.length, GL_UNSIGNED_SHORT, 0)
     }
 
@@ -87,13 +90,21 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
       glClearDepth(1.0f)
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+      glEnable(GL_PRIMITIVE_RESTART)
+      glPrimitiveRestartIndex(BlenderLoader.PRIMITIVE_RESTART)
+
+      glEnable(GL_DEPTH_TEST)
+      glDepthMask(true)
+      glDepthFunc(GL_LEQUAL)
+      glDepthRange(0.0f, 1.0f)
     }
   }
 
   val programState = new State() {
-    var cameraViewMatrixUnif = 0
-    var normalModelToCameraMatrixUnif = 0
-    var perspectiveMatrixUnif = 0
+    var modelToViewMatrixUnif = 0
+    var worldToViewMatrixUnif = 0
+    var modelToViewNormalMatrixUnif = 0
+    var viewToPerspectiveMatrixUnif = 0
     var programId = 0
     val vertexShader = "src/main/shaders/MatrixPerspective.vert"
     val fragmentShader = "src/main/shaders/fragment_basic.glsl"
@@ -104,9 +115,10 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       shaders.put(GL_VERTEX_SHADER, ShaderLoader.createShader(vertexShader, GL_VERTEX_SHADER))
       shaders.put(GL_FRAGMENT_SHADER, ShaderLoader.createShader(fragmentShader, GL_FRAGMENT_SHADER))
       programId = ShaderLoader.initializeProgram(shaders.asJava)
-      cameraViewMatrixUnif = glGetUniformLocation(programId, "cameraViewMatrix")
-      normalModelToCameraMatrixUnif = glGetUniformLocation(programId, "normalModelToCameraMatrix")
-      perspectiveMatrixUnif = glGetUniformLocation(programId, "perspectiveMatrix")
+      modelToViewMatrixUnif = glGetUniformLocation(programId, "modelToViewMatrix")
+      worldToViewMatrixUnif = glGetUniformLocation(programId, "worldToViewMatrix")
+      modelToViewNormalMatrixUnif = glGetUniformLocation(programId, "modelToViewNormalMatrix")
+      viewToPerspectiveMatrixUnif = glGetUniformLocation(programId, "viewToPerspectiveMatrix")
       shaders.values foreach { shaderId =>
         glDeleteShader(shaderId)
       }
@@ -114,11 +126,19 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
     override def begin() {
       glUseProgram(programId)
-      glUniformMatrix4(cameraViewMatrixUnif, false, matrixToBuffer(viewMatrix))
-      val normalViewMatrix = new Matrix4f(viewMatrix)
+
+      val modelToWorldMatrix = toMatrix(modelPosition, modelAngle)
+      val worldToviewMatrix = toMatrix(cameraPosition, cameraAngle)
+      glUniformMatrix4(worldToViewMatrixUnif, false, matrixToBuffer(worldToviewMatrix))
+
+      val modelViewMatrix = Matrix4f.mul(worldToviewMatrix, modelToWorldMatrix, null)
+      glUniformMatrix4(modelToViewMatrixUnif, false, matrixToBuffer(modelViewMatrix))
+
+
+      val normalViewMatrix = new Matrix4f(modelViewMatrix)
       normalViewMatrix.invert().transpose()
-      glUniformMatrix3(normalModelToCameraMatrixUnif, false, matrixTo3fBuffer(normalViewMatrix))
-      glUniformMatrix4(perspectiveMatrixUnif, false, perspectiveMatrixBuffer)
+      glUniformMatrix4(modelToViewNormalMatrixUnif, false, matrixToBuffer(normalViewMatrix))
+      glUniformMatrix4(viewToPerspectiveMatrixUnif, false, perspectiveMatrixBuffer)
     }
 
     override def end() {
@@ -145,17 +165,17 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       matrixBuffer
     }
 
-    def matrixTo3fBuffer(matrix: Matrix4f) = {
+    def matrixToBuffer(matrix: Matrix3f) = {
       val matrixBuffer = BufferUtils.createFloatBuffer(3 * 3)
-      matrix.store3f(matrixBuffer)
+      matrix.store(matrixBuffer)
       matrixBuffer.flip()
       matrixBuffer
     }
   }
 
   //val modelFile = "src/main/resources/quad.obj"
-  val modelFile = "src/main/resources/monkey.obj"
-  //val modelFile = "src/main/resources/sphere.obj"
+  //val modelFile = "src/main/resources/monkey.obj"
+  val modelFile = "src/main/resources/sphere.obj"
   //val modelFile = "src/main/resources/cube.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
   val vertexPositions = model.verticesArray
@@ -223,6 +243,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       elementBufferId = glGenBuffers()
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, facesBuffer, GL_STATIC_DRAW)
+      //glVertexPointer(3, GL_FLOAT, sizeof(ObjMeshVertex), 0);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
     }
 
