@@ -1,14 +1,20 @@
 #version 330
 
 layout(location = 0) in vec3 position;
-//layout(location = 1) in vec4 color;
+layout(location = 1) in vec3 normal;
 
 smooth out vec4 theColor;
 
+// normal model view to camera view matrix
+uniform mat3 normalModelToCameraMatrix;
+
+// vertex model view to camera view matrix
 uniform mat4 cameraViewMatrix;
+
+// camera view to perspective view matrix
 uniform mat4 perspectiveMatrix;
 
-/*struct PointLight {
+struct PointLight {
   vec3 worldPosition;
   vec3 color;
   float maxDistance;
@@ -28,7 +34,7 @@ float applyPointLight(mat4 viewMatrix, vec3 vertexViewPosition, vec3 vertexViewN
   } else {
     return 0.0;
   }
-}*/
+}
 
 void main()
 {
@@ -38,11 +44,11 @@ void main()
 	gl_Position = perspectiveView;
 
 
-	/*vec3 vertexViewNormal = normalize(normalMatrix * normal);
+	vec3 vertexViewNormal = normalize(normalModelToCameraMatrix * normal);
 
-    PointLight pointLight = PointLight(vec3(5.0, 5.0, 5.0), vec3(1.0, 1.0, 1.0), 10.0);
+    PointLight pointLight = PointLight(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 100.0);
     float lightIntensity = applyPointLight(cameraViewMatrix, perspectiveView.xyz, vertexViewNormal, pointLight);
 
-	theColor = vec4(lightIntensity, lightIntensity, lightIntensity, 1.0);*/
-	theColor = vec4(1.0, 1.0, 1.0, 1.0);
+	theColor = vec4(lightIntensity, lightIntensity, lightIntensity, 1.0);
+	//theColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

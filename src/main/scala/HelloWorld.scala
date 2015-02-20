@@ -3,18 +3,19 @@ package hello
 
 import java.io.{FileInputStream, File}
 
-import model.BlenderLoader
+import model.{Face, BlenderLoader}
 import opengl.ShaderLoader
 import org.lwjgl.BufferUtils
 import org.lwjgl.input.{Mouse, Keyboard}
 import org.lwjgl.opengl.Display
 import org.lwjgl.util.glu.GLU
-import org.lwjgl.util.vector.{Quaternion, Vector3f, Matrix4f}
+import org.lwjgl.util.vector.{Matrix3f, Quaternion, Vector3f, Matrix4f}
 import java.nio.FloatBuffer
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL15._
 import org.lwjgl.opengl.GL20._
 import org.lwjgl.opengl.GL30._
+import org.lwjgl.opengl.GL31._
 import state.State
 import scala.collection.mutable
 import scala.collection.JavaConverters._
@@ -72,7 +73,9 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
     withTriangleData.run {
       //println(s"drawing ${faceVertices.length} vertices")
-      glDrawElements(GL_TRIANGLES, faceVertices.length, GL_UNSIGNED_BYTE, 0)
+      glEnable(GL_PRIMITIVE_RESTART)
+      glPrimitiveRestartIndex(BlenderLoader.PRIMITIVE_RESTART)
+      glDrawElements(GL_TRIANGLE_FAN, faceVertices.length, GL_UNSIGNED_SHORT, 0)
     }
 
     //Display.sync(60) // Force max rate of about 60 FPS
@@ -89,6 +92,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
   val programState = new State() {
     var cameraViewMatrixUnif = 0
+    var normalModelToCameraMatrixUnif = 0
     var perspectiveMatrixUnif = 0
     var programId = 0
     val vertexShader = "src/main/shaders/MatrixPerspective.vert"
@@ -101,6 +105,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       shaders.put(GL_FRAGMENT_SHADER, ShaderLoader.createShader(fragmentShader, GL_FRAGMENT_SHADER))
       programId = ShaderLoader.initializeProgram(shaders.asJava)
       cameraViewMatrixUnif = glGetUniformLocation(programId, "cameraViewMatrix")
+      normalModelToCameraMatrixUnif = glGetUniformLocation(programId, "normalModelToCameraMatrix")
       perspectiveMatrixUnif = glGetUniformLocation(programId, "perspectiveMatrix")
       shaders.values foreach { shaderId =>
         glDeleteShader(shaderId)
@@ -110,6 +115,9 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     override def begin() {
       glUseProgram(programId)
       glUniformMatrix4(cameraViewMatrixUnif, false, matrixToBuffer(viewMatrix))
+      val normalViewMatrix = new Matrix4f(viewMatrix)
+      normalViewMatrix.invert().transpose()
+      glUniformMatrix3(normalModelToCameraMatrixUnif, false, matrixTo3fBuffer(normalViewMatrix))
       glUniformMatrix4(perspectiveMatrixUnif, false, perspectiveMatrixBuffer)
     }
 
@@ -136,12 +144,19 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       matrixBuffer.flip()
       matrixBuffer
     }
+
+    def matrixTo3fBuffer(matrix: Matrix4f) = {
+      val matrixBuffer = BufferUtils.createFloatBuffer(3 * 3)
+      matrix.store3f(matrixBuffer)
+      matrixBuffer.flip()
+      matrixBuffer
+    }
   }
 
-  //val modelFile = "src/main/resources/wt_teapot.obj"
   //val modelFile = "src/main/resources/quad.obj"
   val modelFile = "src/main/resources/monkey.obj"
   //val modelFile = "src/main/resources/sphere.obj"
+  //val modelFile = "src/main/resources/cube.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
   val vertexPositions = model.verticesArray
   /*val vertexPositions = Array[Float](
@@ -150,42 +165,58 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     0.5f, -0.5f, 0f,    // Right bottom     ID: 2
     0.5f, 0.5f, 0f      // Right left       ID: 3
   )*/
-  val faceVertices = model.faceIndicesArray
+  val faceVertices = model.faceIndicesTriangleFanArray
   /*val faceVertices = Array[Byte](
     // Left bottom triangle
     0, 1, 2,
     // Right top triangle
     2, 3, 0
   )*/
+  val vertexNormals = model.normalsArray
 
 
   val triangleData = new State() {
     var vertexArrayObjectId = 0
     var elementBufferId = 0
     var positionBufferObject = 0 // TODO: figure out how to propagate this from init to begin
+    var normalsBufferObject = 0 // TODO: figure out how to propagate this from init to begin
     override def init() {
       glEnable(GL_CULL_FACE)
       glCullFace(GL_BACK)
       glFrontFace(GL_CCW)
 
-      // vertices
-      val vertexPositionsBuffer = BufferUtils.createFloatBuffer(vertexPositions.length)
-      println(s"""loaded vertexPositionsBuffer with ${vertexPositions.length} vertices: ${vertexPositions.mkString(",")}""")
-      vertexPositionsBuffer.put(vertexPositions)
-      vertexPositionsBuffer.flip()
-
+      // setup a vertex array for all vertex attributes (vertices, normals, and anything else)
       vertexArrayObjectId = glGenVertexArrays()
       glBindVertexArray(vertexArrayObjectId)
+
+      // vertices
+      val vertexPositionsBuffer = BufferUtils.createFloatBuffer(vertexPositions.length)
+      println(s"""loaded vertexPositionsBuffer with ${vertexPositions.length} floats: ${vertexPositions.mkString(",")}""")
+      vertexPositionsBuffer.put(vertexPositions)
+      vertexPositionsBuffer.flip()
       positionBufferObject = glGenBuffers()
       glBindBuffer(GL_ARRAY_BUFFER, positionBufferObject)
       glBufferData(GL_ARRAY_BUFFER, vertexPositionsBuffer, GL_STATIC_DRAW)
       glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0)
       glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+      // normals
+      val vertexNormalsBuffer = BufferUtils.createFloatBuffer(vertexNormals.length)
+      println(s"""loaded vertexNormalsBuffer with ${vertexNormals.length} floats: ${vertexNormals.mkString(",")}""")
+      vertexNormalsBuffer.put(vertexNormals)
+      vertexNormalsBuffer.flip()
+      normalsBufferObject = glGenBuffers()
+      glBindBuffer(GL_ARRAY_BUFFER, normalsBufferObject)
+      glBufferData(GL_ARRAY_BUFFER, vertexNormalsBuffer, GL_STATIC_DRAW)
+      glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, 0)
+      glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+      // close the vertex array
       glBindVertexArray(0)
 
       // elements
-      val facesBuffer = BufferUtils.createByteBuffer(faceVertices.length)
-      println(s"""loaded facesBuffer with ${faceVertices.length} faces: ${faceVertices.mkString(",")}""")
+      val facesBuffer = BufferUtils.createShortBuffer(faceVertices.length)
+      println(s"""loaded facesBuffer with ${faceVertices.length} shorts: ${faceVertices.mkString(",")}""")
       facesBuffer.put(faceVertices)
       facesBuffer.flip()
 
@@ -199,6 +230,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       // vertices
       glBindVertexArray(vertexArrayObjectId)
       glEnableVertexAttribArray(0)
+      glEnableVertexAttribArray(1)
 
       // elements
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
@@ -210,6 +242,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
       // vertices
+      glDisableVertexAttribArray(1)
       glDisableVertexAttribArray(0)
       glBindVertexArray(0)
     }
