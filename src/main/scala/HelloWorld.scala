@@ -81,7 +81,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       glDrawElements(GL_TRIANGLE_FAN, faceVertices.length, GL_UNSIGNED_SHORT, 0)
     }
 
-    //Display.sync(60) // Force max rate of about 60 FPS
+    Display.sync(60) // Force max rate of about 60 FPS
     Display.update()
   }
 

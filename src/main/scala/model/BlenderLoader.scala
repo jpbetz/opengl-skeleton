@@ -1,18 +1,16 @@
 package model
 
 import java.io.InputStream
-import org.lwjgl.util.vector.Vector3f
+import java.nio.ByteBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
 case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Normal], uvs: Array[UV]) {
-  val faceIds: Map[FaceIndex, Int] = faces.flatMap(_.faceIndices).toSet.zipWithIndex.toMap
 
-  private def toArray(vectors: Array[Vector3f]): Array[Float] = {
-    vectors.map(toFloats).flatten.toArray
-  }
+  // generate ids for each distinct vertex/uv/normal combination
+  private val elementIds: Map[FaceIndex, Int] = faces.flatMap(_.faceIndices).toSet.zipWithIndex.toMap
 
-  private def toFloats(vector: Vector3f): List[Float] = {
+  private def toFloats(vector: Vector3): List[Float] = {
     List(vector.x, vector.y, vector.z)
   }
 
@@ -20,13 +18,15 @@ case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Nor
   private def toUnsignedShort(value: Int): Short = ((value) & 0xffff).toShort
 
   /**
+   * Create an index list for a vertex array object.
    * Indices are provided in GL_TRIANGLE_FAN order and are terminated by BlenderLoader.PRIMITIVE_RESTART
    * See glPrimitiveRestartIndex for details.
    * @return
    */
+  // TODO: build a ByteBuffer directly
   def triangleFanArrayElementIndices: Array[Short] = {
     val indices = faces flatMap { face =>
-      val indicesAsShorts = face.faceIndices.map(f => toUnsignedShort(faceIds(f)))
+      val indicesAsShorts = face.faceIndices.map(f => toUnsignedShort(elementIds(f)))
       indicesAsShorts ++ List(BlenderLoader.PRIMITIVE_RESTART)
     }
     indices.toArray
@@ -36,26 +36,26 @@ case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Nor
    * Interleaved vertices and normals.  3 floats for a vertex followed by 3 floats for a normal.
    * @return
    */
+  // TODO: build a ByteBuffer directly
+  // TODO: Add uv coordinates
   def interleavedDataArray: Array[Float] = {
+    val sortedFaceIndices: List[FaceIndex] = elementIds.toList.sortBy(_._2).map(_._1)
 
-    val entries = faces flatMap { face =>
-      face.faceIndices.map(f => (faceIds(f), (f.vertex, f.normal)))
-    }
-    // remove duplicates, order by face id
-    val sortedFaceIndices = entries.toMap.toList.sortBy(_._1).map(_._2)
-    val data = sortedFaceIndices flatMap { case (vertexId, normalId) =>
-      val vertex = vertices(vertexId-1).vertex
-      val normal = normalId.map(n => normals(n-1).normal).getOrElse(new Vector3f(0f, 0f, 0f))
+    val data = sortedFaceIndices flatMap { faceIndex =>
+      val vertex = vertices(faceIndex.vertex-1).vertex
+      val normal = faceIndex.normal.map(n => normals(n-1).normal).getOrElse(Vector3(0f, 0f, 0f))
       toFloats(vertex) ++ toFloats(normal)
     }
     data.toArray
   }
 }
 
+case class Vector3(x: Float, y: Float, z: Float)
+
 sealed trait BlenderLine
-case class Vertex(vertex: Vector3f) extends BlenderLine
-case class Normal(normal: Vector3f) extends BlenderLine
-case class UV(uv: Vector3f) extends BlenderLine
+case class Vertex(vertex: Vector3) extends BlenderLine
+case class Normal(normal: Vector3) extends BlenderLine
+case class UV(uv: Vector3) extends BlenderLine
 
 case class Face(faceIndices: List[FaceIndex]) extends BlenderLine
 
@@ -81,8 +81,8 @@ object BlenderLoader {
 
     def intParser: Parser[Int] = """[-+]?\d+""".r ^^ { value => value.toInt }
     def floatParser: Parser[Float] = """[-+]?(\d*\.\d+|\d+)""".r ^^ { value => value.toFloat }
-    def vector3fParser: Parser[Vector3f] = floatParser ~ floatParser ~ floatParser ^^ {
-      case x~y~z => new Vector3f(x, y, z)
+    def vector3fParser: Parser[Vector3] = floatParser ~ floatParser ~ floatParser ^^ {
+      case x~y~z => new Vector3(x, y, z)
     }
 
     // Vertex Data

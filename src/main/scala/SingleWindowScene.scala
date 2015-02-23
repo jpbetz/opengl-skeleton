@@ -34,7 +34,9 @@ abstract class SingleWindowScene(width: Int, height: Int, openGlMajorVersion: In
 
   @throws(classOf[LWJGLException])
   protected def configure() {
-    val pixelFormat: PixelFormat = new PixelFormat
+    // http://stackoverflow.com/questions/18702467/enable-anti-aliasing-with-lwjgl
+    // http://www.java-gaming.org/topics/lwjgl-antialiased-lines/30894/view.html
+    val pixelFormat: PixelFormat = new PixelFormat(8, 8, 0, 8)
     val contextAttribs: ContextAttribs = new ContextAttribs(openGlMajorVersion,
                                                             openGlMinorVersion).withForwardCompatible(true).withProfileCore(true)
     Display.setDisplayMode(new DisplayMode(width, height))
