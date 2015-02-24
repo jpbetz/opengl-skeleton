@@ -3,6 +3,8 @@ package hello
 
 import java.io.{FileInputStream, File}
 
+import com.ra4king.opengl.util.math.Vector3
+import com.ra4king.opengl.util.math.Matrix4
 import io.BlenderLoader
 import model._
 import opengl.ShaderLoader
@@ -10,7 +12,6 @@ import org.lwjgl.BufferUtils
 import org.lwjgl.input.{Mouse, Keyboard}
 import org.lwjgl.opengl.Display
 import org.lwjgl.util.glu.GLU
-import org.lwjgl.util.vector.{Matrix3f, Quaternion, Vector3f, Matrix4f}
 import java.nio.FloatBuffer
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL15._
@@ -26,10 +27,10 @@ object HelloWorld extends App {
   new HelloWorld().run
 }
 
-class HelloWorld extends SingleWindowScene(1600, 1200, 3, 2) {
+class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
-  var camera = new SceneCamera(new Vector3f(0f, 0f, -3f), new Vector3f())
-  var sceneModel = new SceneModel(new Vector3f(), new Vector3f())
+  var camera = new SceneCamera(new Vector3(0f, 0f, -3f), new Vector3())
+  var sceneModel = new SceneModel(new Vector3(), new Vector3())
 
   val rotationDelta = 0.1f
   val scaleDelta = 0.1f
@@ -45,21 +46,27 @@ class HelloWorld extends SingleWindowScene(1600, 1200, 3, 2) {
     val withTriangleData = withProgram.push(triangleData)
 
     if(Mouse.isButtonDown(0)) {
-      camera.angle.y += -Mouse.getDX() * rotationDelta
-      camera.angle.x += Mouse.getDY() * rotationDelta
+      camera.angle.set(
+        camera.angle.x + Mouse.getDY() * rotationDelta,
+        camera.angle.y + -Mouse.getDX() * rotationDelta,
+        camera.angle.z)
     }
 
     // TODO: make movement relative to camera angle
-    if(Keyboard.isKeyDown(Keyboard.KEY_UP)) camera.position.translate(0, posDelta, 0)
-    if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) camera.position.translate(0, -posDelta, 0)
-    if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) camera.position.translate(posDelta, 0, 0)
-    if(Keyboard.isKeyDown(Keyboard.KEY_LEFT)) camera.position.translate(-posDelta, 0, 0)
+    var delta = new Vector3()
+    if(Keyboard.isKeyDown(Keyboard.KEY_UP)) delta = delta.add(0, posDelta, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) delta = delta.add(0, -posDelta, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) delta = delta.add(posDelta, 0, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_LEFT)) delta = delta.add(-posDelta, 0, 0)
 
     if(Mouse.isButtonDown(1)) {
-      camera.position.translate(0, 0, Mouse.getDY() * posDelta)
+      delta = delta.add(0, 0, Mouse.getDY() * posDelta)
     }
 
-    sceneModel.angle.y += rotationDelta*2
+    // TODO: rotate delta by camera.angle
+    camera.position.set(camera.position.add(delta))
+
+    sceneModel.angle.set(sceneModel.angle.x, sceneModel.angle.y + rotationDelta*2, sceneModel.angle.z)
 
     withTriangleData.run {
       triangleData.draw()
@@ -113,15 +120,14 @@ class HelloWorld extends SingleWindowScene(1600, 1200, 3, 2) {
 
       val modelToWorldMatrix = sceneModel.toMatrix
       val worldToViewMatrix = camera.toMatrix
-      glUniformMatrix4(worldToViewMatrixUnif, false, matrixToBuffer(worldToViewMatrix))
+      glUniformMatrix4(worldToViewMatrixUnif, false, worldToViewMatrix.toBuffer)
 
-      val modelViewMatrix = Matrix4f.mul(worldToViewMatrix, modelToWorldMatrix, null)
-      glUniformMatrix4(modelToViewMatrixUnif, false, matrixToBuffer(modelViewMatrix))
+      val modelViewMatrix = worldToViewMatrix.mult(modelToWorldMatrix)
+      glUniformMatrix4(modelToViewMatrixUnif, false, modelViewMatrix.toBuffer)
 
 
-      val normalViewMatrix = new Matrix4f(modelViewMatrix)
-      normalViewMatrix.invert().transpose()
-      glUniformMatrix4(modelToViewNormalMatrixUnif, false, matrixToBuffer(normalViewMatrix))
+      val normalViewMatrix = new Matrix4(modelViewMatrix).inverse().transpose()
+      glUniformMatrix4(modelToViewNormalMatrixUnif, false, normalViewMatrix.toBuffer)
       glUniformMatrix4(viewToPerspectiveMatrixUnif, false, perspectiveMatrixBuffer)
     }
 
@@ -130,23 +136,8 @@ class HelloWorld extends SingleWindowScene(1600, 1200, 3, 2) {
     }
 
     def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
-      val matrixBuffer = BufferUtils.createFloatBuffer(4 * 4)
-      val matrix = new Matrix4f()
-      matrix.m00 = frustumScale
-      matrix.m11 = frustumScale
-      matrix.m22 = (zFar + zNear) / (zNear - zFar)
-      matrix.m23 = -1.0f
-      matrix.m32 = (2 * zFar * zNear) / (zNear - zFar)
-      matrix.store(matrixBuffer)
-      matrixBuffer.flip()
-      matrixBuffer
-    }
-
-    def matrixToBuffer(matrix: Matrix4f) = {
-      val matrixBuffer = BufferUtils.createFloatBuffer(4 * 4)
-      matrix.store(matrixBuffer)
-      matrixBuffer.flip()
-      matrixBuffer
+      val matrix = new Matrix4().clearToPerspective(math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
+      matrix.toBuffer
     }
   }
 
