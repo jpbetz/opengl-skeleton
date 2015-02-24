@@ -30,3 +30,7 @@ trait State {
     }
   }
 }
+
+trait DrawableState extends State {
+  def draw(): Unit
+}

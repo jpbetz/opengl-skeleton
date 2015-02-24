@@ -3,7 +3,8 @@ package hello
 
 import java.io.{FileInputStream, File}
 
-import model.{Face, BlenderLoader}
+import io.BlenderLoader
+import model._
 import opengl.ShaderLoader
 import org.lwjgl.BufferUtils
 import org.lwjgl.input.{Mouse, Keyboard}
@@ -16,7 +17,7 @@ import org.lwjgl.opengl.GL15._
 import org.lwjgl.opengl.GL20._
 import org.lwjgl.opengl.GL30._
 import org.lwjgl.opengl.GL31._
-import state.State
+import state.{VertexArrayState, State}
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 
@@ -25,26 +26,10 @@ object HelloWorld extends App {
   new HelloWorld().run
 }
 
-class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
+class HelloWorld extends SingleWindowScene(1600, 1200, 3, 2) {
 
-  def degreesToRadians(degrees: Float): Float = {
-    degrees * math.Pi.toFloat / 180
-  }
-
-  var cameraPosition = new Vector3f(0f, 0f, -3f)
-  var cameraAngle = new Vector3f() // TODO: how to use a Quaternion here?
-
-  var modelPosition = new Vector3f()
-  var modelAngle = new Vector3f()
-
-  def toMatrix(position: Vector3f, angle: Vector3f) = {
-    val matrix = new Matrix4f()
-    matrix.rotate(degreesToRadians(angle.z), new Vector3f(0, 0, 1))
-    matrix.rotate(degreesToRadians(angle.y), new Vector3f(0, 1, 0))
-    matrix.rotate(degreesToRadians(angle.x), new Vector3f(1, 0, 0))
-    matrix.translate(position)
-    matrix
-  }
+  var camera = new SceneCamera(new Vector3f(0f, 0f, -3f), new Vector3f())
+  var sceneModel = new SceneModel(new Vector3f(), new Vector3f())
 
   val rotationDelta = 0.1f
   val scaleDelta = 0.1f
@@ -60,25 +45,24 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     val withTriangleData = withProgram.push(triangleData)
 
     if(Mouse.isButtonDown(0)) {
-      cameraAngle.y += -Mouse.getDX() * rotationDelta
-      cameraAngle.x += Mouse.getDY() * rotationDelta
+      camera.angle.y += -Mouse.getDX() * rotationDelta
+      camera.angle.x += Mouse.getDY() * rotationDelta
     }
 
     // TODO: make movement relative to camera angle
-    if(Keyboard.isKeyDown(Keyboard.KEY_UP)) cameraPosition.translate(0, posDelta, 0)
-    if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) cameraPosition.translate(0, -posDelta, 0)
-    if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) cameraPosition.translate(posDelta, 0, 0)
-    if(Keyboard.isKeyDown(Keyboard.KEY_LEFT)) cameraPosition.translate(-posDelta, 0, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_UP)) camera.position.translate(0, posDelta, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) camera.position.translate(0, -posDelta, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) camera.position.translate(posDelta, 0, 0)
+    if(Keyboard.isKeyDown(Keyboard.KEY_LEFT)) camera.position.translate(-posDelta, 0, 0)
 
     if(Mouse.isButtonDown(1)) {
-      cameraPosition.translate(0, 0, Mouse.getDY() * posDelta)
+      camera.position.translate(0, 0, Mouse.getDY() * posDelta)
     }
 
-    modelAngle.y += rotationDelta*2
+    sceneModel.angle.y += rotationDelta*2
 
     withTriangleData.run {
-      //println(s"drawing ${faceVertices.length} vertices")
-      glDrawElements(GL_TRIANGLE_FAN, faceVertices.length, GL_UNSIGNED_SHORT, 0)
+      triangleData.draw()
     }
 
     Display.sync(60) // Force max rate of about 60 FPS
@@ -127,11 +111,11 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     override def begin() {
       glUseProgram(programId)
 
-      val modelToWorldMatrix = toMatrix(modelPosition, modelAngle)
-      val worldToviewMatrix = toMatrix(cameraPosition, cameraAngle)
-      glUniformMatrix4(worldToViewMatrixUnif, false, matrixToBuffer(worldToviewMatrix))
+      val modelToWorldMatrix = sceneModel.toMatrix
+      val worldToViewMatrix = camera.toMatrix
+      glUniformMatrix4(worldToViewMatrixUnif, false, matrixToBuffer(worldToViewMatrix))
 
-      val modelViewMatrix = Matrix4f.mul(worldToviewMatrix, modelToWorldMatrix, null)
+      val modelViewMatrix = Matrix4f.mul(worldToViewMatrix, modelToWorldMatrix, null)
       glUniformMatrix4(modelToViewMatrixUnif, false, matrixToBuffer(modelViewMatrix))
 
 
@@ -164,13 +148,6 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       matrixBuffer.flip()
       matrixBuffer
     }
-
-    def matrixToBuffer(matrix: Matrix3f) = {
-      val matrixBuffer = BufferUtils.createFloatBuffer(3 * 3)
-      matrix.store(matrixBuffer)
-      matrixBuffer.flip()
-      matrixBuffer
-    }
   }
 
   //val modelFile = "src/main/resources/quad.obj"
@@ -178,68 +155,5 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
   //val modelFile = "src/main/resources/sphere.obj"
   //val modelFile = "src/main/resources/cube.obj"
   val model = BlenderLoader.loadModel(new FileInputStream(new File(modelFile)))
-  val vertexAndNormals = model.interleavedDataArray
-  val faceVertices = model.triangleFanArrayElementIndices
-
-  val triangleData = new State() {
-    var vertexArrayObjectId = 0
-    var elementBufferId = 0
-    var verticesAndNormalsObjectId = 0 // TODO: figure out how to propagate this from init to begin
-    override def init() {
-      glEnable(GL_CULL_FACE)
-      glCullFace(GL_BACK)
-      glFrontFace(GL_CCW)
-
-      // setup a vertex array for all vertex attributes (vertices, normals, and anything else)
-      vertexArrayObjectId = glGenVertexArrays()
-      glBindVertexArray(vertexArrayObjectId)
-
-      // vertices and normals
-      val verticesAndNormalsBuffer = BufferUtils.createFloatBuffer(vertexAndNormals.length)
-      println(s"""loaded verticesAndNormalsBuffer with ${vertexAndNormals.length} floats: ${vertexAndNormals.mkString(",")}""")
-      verticesAndNormalsBuffer.put(vertexAndNormals)
-      verticesAndNormalsBuffer.flip()
-      verticesAndNormalsObjectId = glGenBuffers()
-      glBindBuffer(GL_ARRAY_BUFFER, verticesAndNormalsObjectId)
-      glBufferData(GL_ARRAY_BUFFER, verticesAndNormalsBuffer, GL_STATIC_DRAW)
-      glVertexAttribPointer(0, 3, GL_FLOAT, false, 6*java.lang.Float.BYTES, 0)
-      glVertexAttribPointer(1, 3, GL_FLOAT, false, 6*java.lang.Float.BYTES, 3*java.lang.Float.BYTES)
-      glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-      // close the vertex array
-      glBindVertexArray(0)
-
-      // elements
-      val facesBuffer = BufferUtils.createShortBuffer(faceVertices.length)
-      println(s"""loaded facesBuffer with ${faceVertices.length} shorts: ${faceVertices.mkString(",")}""")
-      facesBuffer.put(faceVertices)
-      facesBuffer.flip()
-
-      elementBufferId = glGenBuffers()
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, facesBuffer, GL_STATIC_DRAW)
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
-    }
-
-    override def begin() {
-      // vertices
-      glBindVertexArray(vertexArrayObjectId)
-      glEnableVertexAttribArray(0)
-      glEnableVertexAttribArray(1)
-
-      // elements
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId)
-    }
-
-    override def end() {
-
-      // elements
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
-
-      // vertices
-      glDisableVertexAttribArray(1)
-      glDisableVertexAttribArray(0)
-      glBindVertexArray(0)
-    }
-  }
+  val triangleData = new VertexArrayState(model.interleavedDataArray, model.triangleFanArrayElementIndices)
 }

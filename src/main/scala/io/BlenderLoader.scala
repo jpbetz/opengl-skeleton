@@ -1,7 +1,10 @@
-package model
+package io
 
 import java.io.InputStream
-import java.nio.ByteBuffer
+import java.nio.{FloatBuffer, ShortBuffer, ByteBuffer}
+
+import org.lwjgl.BufferUtils
+
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
@@ -10,12 +13,10 @@ case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Nor
   // generate ids for each distinct vertex/uv/normal combination
   private val elementIds: Map[FaceIndex, Int] = faces.flatMap(_.faceIndices).toSet.zipWithIndex.toMap
 
-  private def toFloats(vector: Vector3): List[Float] = {
-    List(vector.x, vector.y, vector.z)
-  }
-
   // lwjgl needs indices to be unsigned, so we used unsigned shorts
-  private def toUnsignedShort(value: Int): Short = ((value) & 0xffff).toShort
+  // TODO: We should use unsigned ints or longs here if the element count exceeds max short.  And we should raise an exception
+  // if the element count exceeds what we support.
+  private def toUnsignedShort(value: Int): Short = (value & 0xffff).toShort
 
   /**
    * Create an index list for a vertex array object.
@@ -24,12 +25,21 @@ case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Nor
    * @return
    */
   // TODO: build a ByteBuffer directly
-  def triangleFanArrayElementIndices: Array[Short] = {
-    val indices = faces flatMap { face =>
-      val indicesAsShorts = face.faceIndices.map(f => toUnsignedShort(elementIds(f)))
-      indicesAsShorts ++ List(BlenderLoader.PRIMITIVE_RESTART)
+  def triangleFanArrayElementIndices: ShortBuffer = {
+
+    val shortCount = faces.map(_.faceIndices.size + 1 /* need extra short for primitive restart */).sum
+    val facesBuffer = BufferUtils.createShortBuffer(shortCount)
+    
+    faces foreach { face =>
+      face.faceIndices foreach { f =>
+        facesBuffer.put(toUnsignedShort(elementIds(f)))
+      }
+
+      facesBuffer.put(BlenderLoader.PRIMITIVE_RESTART)
     }
-    indices.toArray
+    facesBuffer.flip()
+
+    facesBuffer
   }
 
   /**
@@ -38,15 +48,24 @@ case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Nor
    */
   // TODO: build a ByteBuffer directly
   // TODO: Add uv coordinates
-  def interleavedDataArray: Array[Float] = {
+  def interleavedDataArray: FloatBuffer = {
+    val floatCount = elementIds.size * 3 /* x,y,z */ * 2 /* vertices and normals */
+    val verticesAndNormalsBuffer = BufferUtils.createFloatBuffer(floatCount)
     val sortedFaceIndices: List[FaceIndex] = elementIds.toList.sortBy(_._2).map(_._1)
 
-    val data = sortedFaceIndices flatMap { faceIndex =>
+    sortedFaceIndices foreach { faceIndex =>
       val vertex = vertices(faceIndex.vertex-1).vertex
+      verticesAndNormalsBuffer.put(vertex.x)
+      verticesAndNormalsBuffer.put(vertex.y)
+      verticesAndNormalsBuffer.put(vertex.z)
       val normal = faceIndex.normal.map(n => normals(n-1).normal).getOrElse(Vector3(0f, 0f, 0f))
-      toFloats(vertex) ++ toFloats(normal)
+      verticesAndNormalsBuffer.put(normal.x)
+      verticesAndNormalsBuffer.put(normal.y)
+      verticesAndNormalsBuffer.put(normal.z)
     }
-    data.toArray
+    verticesAndNormalsBuffer.flip()
+
+    verticesAndNormalsBuffer
   }
 }
 
@@ -69,6 +88,7 @@ case class FaceIndex(vertex: Int, uv: Option[Int], normal: Option[Int])
 
 case class Mtllib(value: String) extends BlenderLine
 
+// TODO: Support negative indices (e.g. -1 in a face means to use the previous v or vn)
 /**
  * See http://www.martinreddy.net/gfx/3d/OBJ.spec
  */
