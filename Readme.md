@@ -1,8 +1,9 @@
-A gradle skeleton project for full access to OpenGL on the JVM.  The main thing this skeleton does is set up a build
-dependency to [LWJGL](http://www.lwjgl.org/),  the same OpenGL bindings used by Minecraft.  This dependency is not
-entirely trivial because LWJGL uses JNI.
+I'm testing out using OpenGL with Scala.
 
-SBT users,  see [sbt-lwjgl-plugin](https://github.com/philcali/sbt-lwjgl-plugin).  This currently uses gradle.
+The main thing this skeleton does is:
+* Set up a dependency to [LWJGL](http://www.lwjgl.org/),  the same OpenGL bindings used by Minecraft.  I currently am using LWJGL 2,  but may switch to LWJGL 3.  This dependency is not entirely trivial because LWJGL uses JNI.  I may switch to SBT at some point if I find an advantage to using it.  If so,  I'll likely start by explorint [sbt-lwjgl-plugin](https://github.com/philcali/sbt-lwjgl-plugin).
+* Monkey patch in some vector, matrix and quaternion classes based on https://github.com/ra4king/LWJGL-OpenGL-Utils.  I will likely rewrite these classes as scala AnyVal classes,  but will need to upgrade to scala 2.12 first.
+* Add some basic utility classes for managing openGL state.
 
 [gradle-natives plugin](https://github.com/cjstehno/gradle-natives) is used to load
 LWJGL native binaries for the correct platform.  This was documented fairly well on the web
@@ -19,7 +20,7 @@ Dependencies
 ------------
 
 * Java JDK 1.7.*
-* Scala 2.10.*
+* Scala 2.11.*
 * Gradle 2.2.1+ (older may work, have not tested)
 * Platforms supported are: 'osx', 'linux', 'windows'
 
@@ -50,8 +51,9 @@ Replace 'osx' with the appropriate platform if needed.
 
 TODO
 ====
-[ ] Add model space and model hierarchy.
-[ ] Draw a sphere.
-[ ] Generate a texture.
+[ ] Upgrade to scala 2.12
+[ ] Convert vector, matrix and quaternion class to scala.  Make them case classes that extend AnyVal so everything is stack allocated.
+[ ] Test out using textures and UV texture coords.
+[ ] Test out importing some astronomical data (e.g. sample of the milky way stars) and rendering a particle system with it.
 [ ] Upgrade to [LWJGL 3](http://www.lwjgl.org/download) once it is available in maven central (see release section on the Download page).
-[ ] Add a [Collada](https://www.khronos.org/files/collada_spec_1_5.pdf)  Ugh,  3d file formats look awful.
+[ ] Add support for [Collada](https://www.khronos.org/files/collada_spec_1_5.pdf) ?  Ugh,  3d file formats look awful.
