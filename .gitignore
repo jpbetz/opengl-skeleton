@@ -8,3 +8,4 @@ opengl-skeleton.iml
 opengl-skeleton.ipr
 opengl-skeleton.iws
 gradle.properties
+hs_err_pid*.log
