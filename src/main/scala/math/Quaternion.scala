@@ -8,9 +8,7 @@ object Quaternion {
   }
 }
 
-case class Quaternion(
-    override val x: Float,
-    override val y: Float,
-    override val z: Float,
-    override val w: Float) 
-  extends Vector4(x, y, z, w)
+// TODO: figure out how to best define this type.  Or just use Vector4 everywhere a quaternion is needed
+case class Quaternion(x: Float, y: Float, z: Float, w: Float) {
+  def toVector: Vector4 = Vector4(x, y, z, w)
+}
