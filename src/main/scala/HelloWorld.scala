@@ -3,9 +3,8 @@ package hello
 
 import java.io.{FileInputStream, File}
 
-import com.ra4king.opengl.util.math.Vector3
-import com.ra4king.opengl.util.math.Matrix4
 import io.BlenderLoader
+import math.{Matrix4, Vector3}
 import model._
 import opengl.ShaderLoader
 import org.lwjgl.BufferUtils
@@ -29,8 +28,8 @@ object HelloWorld extends App {
 
 class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
-  var camera = new SceneCamera(new Vector3(0f, 0f, -3f), new Vector3())
-  var sceneModel = new SceneModel(new Vector3(), new Vector3())
+  var camera = new SceneCamera(Vector3(0f, 0f, -3f), Vector3.origin)
+  var sceneModel = new SceneModel(Vector3.origin, Vector3.origin)
 
   val rotationDelta = 0.1f
   val scaleDelta = 0.1f
@@ -46,14 +45,14 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     val withTriangleData = withProgram.push(triangleData)
 
     if(Mouse.isButtonDown(0)) {
-      camera.angle.set(
+      camera.angle = Vector3(
         camera.angle.x + Mouse.getDY() * rotationDelta,
         camera.angle.y + -Mouse.getDX() * rotationDelta,
         camera.angle.z)
     }
 
     // TODO: make movement relative to camera angle
-    var delta = new Vector3()
+    var delta = Vector3.origin
     if(Keyboard.isKeyDown(Keyboard.KEY_UP)) delta = delta.add(0, posDelta, 0)
     if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) delta = delta.add(0, -posDelta, 0)
     if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) delta = delta.add(posDelta, 0, 0)
@@ -64,9 +63,9 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
 
     // TODO: rotate delta by camera.angle
-    camera.position.set(camera.position.add(delta))
+    camera.position = camera.position + delta
 
-    sceneModel.angle.set(sceneModel.angle.x, sceneModel.angle.y + rotationDelta*2, sceneModel.angle.z)
+    sceneModel.angle = Vector3(sceneModel.angle.x, sceneModel.angle.y + rotationDelta*2, sceneModel.angle.z)
 
     withTriangleData.run {
       triangleData.draw()
@@ -118,15 +117,16 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     override def begin() {
       glUseProgram(programId)
 
-      val modelToWorldMatrix = sceneModel.toMatrix
+
       val worldToViewMatrix = camera.toMatrix
       glUniformMatrix4(worldToViewMatrixUnif, false, worldToViewMatrix.toBuffer)
 
-      val modelViewMatrix = worldToViewMatrix.mult(modelToWorldMatrix)
+      val modelToWorldMatrix = sceneModel.toMatrix
+      val modelViewMatrix = modelToWorldMatrix * worldToViewMatrix
       glUniformMatrix4(modelToViewMatrixUnif, false, modelViewMatrix.toBuffer)
 
 
-      val normalViewMatrix = new Matrix4(modelViewMatrix).inverse().transpose()
+      val normalViewMatrix = modelViewMatrix.normalMatrix
       glUniformMatrix4(modelToViewNormalMatrixUnif, false, normalViewMatrix.toBuffer)
       glUniformMatrix4(viewToPerspectiveMatrixUnif, false, perspectiveMatrixBuffer)
     }
@@ -136,7 +136,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
 
     def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
-      val matrix = new Matrix4().clearToPerspective(math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
+      val matrix = Matrix4.forPerspective(scala.math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
       matrix.toBuffer
     }
   }

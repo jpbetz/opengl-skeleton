@@ -1,25 +1,26 @@
 package model
 
-
-import com.ra4king.opengl.util.math.Vector3
-import com.ra4king.opengl.util.math.Matrix4
+import math.{Matrix4, Vector3}
 
 // TODO: use quaternion for angle?
-class SceneObject(val position: Vector3, val angle: Vector3) {
+class SceneObject(var position: Vector3, var angle: Vector3) {
 
   def degreesToRadians(degrees: Float): Float = {
-    degrees * math.Pi.toFloat / 180
+    degrees * scala.math.Pi.toFloat / 180
   }
 
   def toMatrix = {
-    new Matrix4().clearToIdentity()
-      .rotate(degreesToRadians(angle.z), new Vector3(0, 0, 1))
-      .rotate(degreesToRadians(angle.y), new Vector3(0, 1, 0))
-      .rotate(degreesToRadians(angle.x), new Vector3(1, 0, 0))
-      .translate(position)
+    val rotate = Matrix4.identity
+      .rotate(degreesToRadians(angle.z), Vector3(0, 0, 1))
+      .rotate(degreesToRadians(angle.y), Vector3(0, 1, 0))
+      .rotate(degreesToRadians(angle.x), Vector3(1, 0, 0))
+
+    val translate = Matrix4.identity.translate(position)
+
+    rotate * translate
   }
 }
 
-class SceneModel(override val position: Vector3, override val angle: Vector3) extends SceneObject(position, angle) {}
+class SceneModel(position: Vector3, angle: Vector3) extends SceneObject(position, angle)
 
-class SceneCamera(override val position: Vector3, override val angle: Vector3) extends SceneObject(position, angle)
+class SceneCamera(position: Vector3, angle: Vector3) extends SceneObject(position, angle)
