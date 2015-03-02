@@ -1,10 +1,10 @@
 Subspace
 ========
 
-Lightweight Scala vector and matrix library for graphics programming.
+Lightweight vector and matrix library for graphics programming in Scala.
 
-This is special purpose linear algebra library,  written specifically to have a minimal footprint.  It
-contains the subset of types needed to by graphics programmers when working with a modern graphics pipeline:
+This is a small collection of vector and matrix classes written specifically for graphics programmers working with a
+modern graphics pipeline:
 
 * Vector2
 * Vector3
@@ -13,6 +13,8 @@ contains the subset of types needed to by graphics programmers when working with
 * Matrix4x4
 * Quaternion
 * ...
+
+To minimize it's footprint, this library has no dependencies.
 
 It does not include graphics API bindings, model loaders, or a graphics/game engine.
 
@@ -35,6 +37,7 @@ Goals
 * Good at one thing.  Minimal footprint of code to provide the vector and matrix types needed to program modern against a modern graphics pipeline, and nothing else.
 * Consistent and complete.  Similar libraries for other languages have been studied to make sure all the convenience operations developers expect have been included.
 * Scala idomatic. Immutable case classes for all vector and matrix types. Carefully defined operator overloading for natural looking mathematical expressions.
+* Minimal footprint.  No dependencies.
 
 Non-Goals
 ---------
