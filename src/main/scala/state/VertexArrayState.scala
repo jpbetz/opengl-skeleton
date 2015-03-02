@@ -1,7 +1,8 @@
 package state
 
 
-import java.nio.{ShortBuffer, FloatBuffer}
+import java.nio.{FloatBuffer, ShortBuffer}
+
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL15._
 import org.lwjgl.opengl.GL20._
@@ -12,12 +13,12 @@ class VertexArrayState(val verticesAndNormalsBuffer: FloatBuffer, val facesBuffe
   var vertexArrayObjectId = 0
   var elementBufferId = 0
   var verticesAndNormalsObjectId = 0 // TODO: figure out how to propagate this from init to begin
-  
+
   override def draw() {
     // TODO: allow facesBuffer offset and limit ot be provided instead of using 0 and capacity here
     glDrawElements(GL_TRIANGLE_FAN, facesBuffer.capacity(), GL_UNSIGNED_SHORT, 0)
   }
-  
+
   override def init() {
     glEnable(GL_CULL_FACE)
     glCullFace(GL_BACK)

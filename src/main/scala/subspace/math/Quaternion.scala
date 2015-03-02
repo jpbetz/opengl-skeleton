@@ -1,4 +1,6 @@
-package math
+package subspace.math
+
+import java.nio.FloatBuffer
 
 object Quaternion {
   def fromAxisAngle(axis: Vector3, angle: Float): Quaternion = {
@@ -8,7 +10,7 @@ object Quaternion {
   }
 }
 
-// TODO: figure out how to best define this type.  Or just use Vector4 everywhere a quaternion is needed
-case class Quaternion(x: Float, y: Float, z: Float, w: Float) {
-  def toVector: Vector4 = Vector4(x, y, z, w)
+case class Quaternion(x: Float, y: Float, z: Float, w: Float) extends Bufferable {
+  lazy val toVector: Vector4 = Vector4(x, y, z, w)
+  lazy val toBuffer: FloatBuffer = toVector.toBuffer
 }

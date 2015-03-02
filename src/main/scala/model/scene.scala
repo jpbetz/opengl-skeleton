@@ -1,6 +1,6 @@
 package model
 
-import math.{Matrix4, Vector3}
+import subspace.math.{Vector3, Matrix4x4}
 
 // TODO: use quaternion for angle?
 class SceneObject(var position: Vector3, var angle: Vector3) {
@@ -10,12 +10,12 @@ class SceneObject(var position: Vector3, var angle: Vector3) {
   }
 
   def toMatrix = {
-    val rotate = Matrix4.identity
-      .rotate(degreesToRadians(angle.z), Vector3(0, 0, 1))
-      .rotate(degreesToRadians(angle.y), Vector3(0, 1, 0))
-      .rotate(degreesToRadians(angle.x), Vector3(1, 0, 0))
+    val rotate = Matrix4x4.identity
+      .rotateByAxisAngle(degreesToRadians(angle.z), Vector3(0, 0, 1))
+      .rotateByAxisAngle(degreesToRadians(angle.y), Vector3(0, 1, 0))
+      .rotateByAxisAngle(degreesToRadians(angle.x), Vector3(1, 0, 0))
 
-    val translate = Matrix4.identity.translate(position)
+    val translate = Matrix4x4.identity.translate(position)
 
     rotate * translate
   }

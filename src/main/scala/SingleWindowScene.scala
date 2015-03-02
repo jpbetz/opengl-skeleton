@@ -1,11 +1,8 @@
 package hello
 
 import org.lwjgl.LWJGLException
-import org.lwjgl.opengl.ContextAttribs
-import org.lwjgl.opengl.Display
-import org.lwjgl.opengl.DisplayMode
-import org.lwjgl.opengl.PixelFormat
 import org.lwjgl.opengl.GL11.glViewport
+import org.lwjgl.opengl.{ContextAttribs, Display, DisplayMode, PixelFormat}
 
 
 abstract class SingleWindowScene(width: Int, height: Int, openGlMajorVersion: Int, openGlMinorVersion: Int) extends Runnable {

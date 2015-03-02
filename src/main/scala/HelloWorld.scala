@@ -1,25 +1,22 @@
 package hello
 
 
-import java.io.{FileInputStream, File}
+import java.io.{File, FileInputStream}
+import java.nio.FloatBuffer
 
 import io.BlenderLoader
-import math.{Matrix4, Vector3}
 import model._
 import opengl.ShaderLoader
-import org.lwjgl.BufferUtils
-import org.lwjgl.input.{Mouse, Keyboard}
+import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.Display
-import org.lwjgl.util.glu.GLU
-import java.nio.FloatBuffer
 import org.lwjgl.opengl.GL11._
-import org.lwjgl.opengl.GL15._
 import org.lwjgl.opengl.GL20._
-import org.lwjgl.opengl.GL30._
 import org.lwjgl.opengl.GL31._
-import state.{VertexArrayState, State}
-import scala.collection.mutable
+import state.{State, VertexArrayState}
+import subspace.math.{Vector3, Matrix4x4}
+
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 
 object HelloWorld extends App {
@@ -28,8 +25,8 @@ object HelloWorld extends App {
 
 class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
-  var camera = new SceneCamera(Vector3(0f, 0f, -3f), Vector3.origin)
-  var sceneModel = new SceneModel(Vector3.origin, Vector3.origin)
+  var camera = new SceneCamera(Vector3(0f, 0f, -3f), Vector3.zero)
+  var sceneModel = new SceneModel(Vector3.zero, Vector3.zero)
 
   val rotationDelta = 0.1f
   val scaleDelta = 0.1f
@@ -52,7 +49,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
 
     // TODO: make movement relative to camera angle
-    var delta = Vector3.origin
+    var delta = Vector3.zero
     if(Keyboard.isKeyDown(Keyboard.KEY_UP)) delta = delta.add(0, posDelta, 0)
     if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) delta = delta.add(0, -posDelta, 0)
     if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) delta = delta.add(posDelta, 0, 0)
@@ -136,7 +133,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
 
     def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
-      val matrix = Matrix4.forPerspective(scala.math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
+      val matrix = Matrix4x4.forPerspective(scala.math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
       matrix.toBuffer
     }
   }

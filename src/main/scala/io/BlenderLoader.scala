@@ -1,7 +1,7 @@
 package io
 
 import java.io.InputStream
-import java.nio.{FloatBuffer, ShortBuffer, ByteBuffer}
+import java.nio.{FloatBuffer, ShortBuffer}
 
 import org.lwjgl.BufferUtils
 
@@ -29,7 +29,7 @@ case class Model(faces: Array[Face], vertices: Array[Vertex], normals: Array[Nor
 
     val shortCount = faces.map(_.faceIndices.size + 1 /* need extra short for primitive restart */).sum
     val facesBuffer = BufferUtils.createShortBuffer(shortCount)
-    
+
     faces foreach { face =>
       face.faceIndices foreach { f =>
         facesBuffer.put(toUnsignedShort(elementIds(f)))
