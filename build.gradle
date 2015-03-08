@@ -25,6 +25,7 @@ dependencies {
     compile "org.lwjgl.lwjgl:lwjgl:2.9.2"
     compile "org.lwjgl.lwjgl:lwjgl_util:2.9.2"
     compile 'org.scala-lang:scala-library:2.11.5'
+    testCompile "org.testng:testng:6.1.1"
 }
 
 // See https://github.com/cjstehno/gradle-natives

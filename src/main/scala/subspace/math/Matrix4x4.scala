@@ -3,6 +3,14 @@ package subspace.math
 import java.nio.FloatBuffer
 
 object Matrix4x4 {
+  // convenience constructors
+  def apply(column1: Vector4, column2: Vector4, column3: Vector4, column4: Vector4): Matrix4x4 = Matrix4x4(
+    column1.x, column1.y, column1.z, column1.w,
+    column2.x, column2.y, column2.z, column2.w,
+    column3.x, column3.y, column3.z, column3.w,
+    column4.x, column4.y, column4.z, column4.w
+  )
+
   lazy val identity = Matrix4x4(
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -89,6 +97,7 @@ object Matrix4x4 {
 }
 
 // Use fields so we can stack allocate the matrix
+// form is m<column><row>
 case class Matrix4x4(
     m00: Float, m01: Float, m02: Float, m03: Float,
     m10: Float, m11: Float, m12: Float, m13: Float,
@@ -96,6 +105,35 @@ case class Matrix4x4(
     m30: Float, m31: Float, m32: Float, m33: Float)
   extends Matrix
   with Bufferable{
+
+  def rowCount: Int = 4
+  def columnCount: Int = 4
+
+  def apply(columnIndex: Int, rowIndex: Int): Float = {
+    // ugh,  Should I switch to an array for internal representation?
+    (columnIndex, rowIndex) match {
+      case (0, 0) => m00
+      case (0, 1) => m01
+      case (0, 2) => m02
+      case (0, 3) => m03
+
+      case (1, 0) => m10
+      case (1, 1) => m11
+      case (1, 2) => m12
+      case (1, 3) => m13
+
+      case (2, 0) => m20
+      case (2, 1) => m21
+      case (2, 2) => m22
+      case (2, 3) => m23
+
+      case (3, 0) => m30
+      case (3, 1) => m31
+      case (3, 2) => m32
+      case (3, 3) => m33
+      case _ => throw new ArrayIndexOutOfBoundsException(s"column: $columnIndex, row: $rowIndex is out of range.")
+    }
+  }
 
   def unary_- : Matrix4x4 = negate
   def negate: Matrix4x4 = {
@@ -238,8 +276,8 @@ case class Matrix4x4(
 
   def normalMatrix: Matrix4x4 = inverse.transpose
 
-  def lookAt(eye: Vector3, target: Vector3, up: Vector3): Matrix4x4 = {
-    val eyeToTarget = (eye - target).normalize
+  def lookAt(eye: Vector3, center: Vector3, up: Vector3): Matrix4x4 = {
+    val eyeToTarget = (eye - center).normalize
     val z = if (eyeToTarget.magnitude == 0) {
       Vector3(0, 0, 1)
     } else {
@@ -276,14 +314,24 @@ case class Matrix4x4(
     }
   }
 
-  lazy val toBuffer: FloatBuffer = {
+  def allocateBuffer: FloatBuffer = {
     val direct = Buffers.createFloatBuffer(16)
     direct
       .put(m00).put(m01).put(m02).put(m03)
       .put(m10).put(m11).put(m12).put(m13)
       .put(m20).put(m21).put(m22).put(m23)
       .put(m30).put(m31).put(m32).put(m33)
-    direct.flip
+    direct.flip()
     direct
+  }
+
+  def updateBuffer(buffer: FloatBuffer): Unit = {
+    buffer.clear()
+    buffer
+      .put(m00).put(m01).put(m02).put(m03)
+      .put(m10).put(m11).put(m12).put(m13)
+      .put(m20).put(m21).put(m22).put(m23)
+      .put(m30).put(m31).put(m32).put(m33)
+    buffer.flip()
   }
 }

@@ -4,15 +4,19 @@ import java.nio.FloatBuffer
 
 object Vector2 {
   lazy val origin = Vector2(0f, 0f)
-
-  def angle(from: Vector2, to: Vector2): Float = {
-    // returns the angle in [TODO: units] between from and to
-    // TODO: implement
-    throw new NotImplementedError()
-  }
 }
 
 case class Vector2(x: Float, y: Float) extends Vector with Bufferable {
+
+  def size: Int = 2
+
+  def apply(index: Int): Float = {
+    index match {
+      case 0 => x
+      case 1 => y
+      case _ => throw new ArrayIndexOutOfBoundsException(index)
+    }
+  }
 
   def magnitude: Float = {
     Math.sqrt(x * x + y * y).toFloat
@@ -42,25 +46,30 @@ case class Vector2(x: Float, y: Float) extends Vector with Bufferable {
     Vector2(this.x - x, this.y - y)
   }
 
-  // component-wise multiplication
   def *(f: Float): Vector2 = scale(f)
   def /(f: Float): Vector2 = scale(1/f)
+
   def scale(f: Float): Vector2 = scale(f, f)
   def scale(vec: Vector2): Vector2 = scale(vec.x, vec.y)
   def scale(x: Float, y: Float): Vector2 = {
     Vector2(this.x * x, this.y * y)
   }
 
+  def clamp(min: Float, max: Float): Vector2 = {
+    if (min > max) throw new IllegalArgumentException("min must not be greater than max")
+    Vector2(
+      Floats.clamp(x, min, max),
+      Floats.clamp(y, min, max)
+    )
+  }
+
   def clamp(min: Vector2, max: Vector2): Vector2 = {
+    if (min.x > max.x) throw new IllegalArgumentException("min.x must not be greater than max.x")
+    if (min.y > max.y) throw new IllegalArgumentException("min.y must not be greater than max.y")
     Vector2(
       Floats.clamp(x, min.x, max.x),
       Floats.clamp(y, min.y, max.y)
     )
-  }
-
-  def angle(vec: Vector2): Vector2 = {
-    // TODO
-    throw new NotImplementedError()
   }
 
   def distanceTo(vec: Vector2): Float = {
@@ -68,25 +77,21 @@ case class Vector2(x: Float, y: Float) extends Vector with Bufferable {
   }
 
   def lerp(vec: Vector2, t: Float): Vector2 = {
+    if (t < 0f || t > 1f) throw new IllegalArgumentException("t must be between 0 and 1, inclusively.")
     Vector2(
       Floats.lerp(x, vec.x, t),
       Floats.lerp(y, vec.y, t)
     )
   }
 
-  def min(vec: Vector2): Vector2 = {
+  def round(): Vector2 = {
     Vector2(
-      scala.math.min(x, vec.x),
-      scala.math.min(y, vec.y)
+      scala.math.round(x),
+      scala.math.round(y)
     )
   }
 
-  def max(vec: Vector2): Vector2 = {
-    Vector2(
-      scala.math.max(x, vec.x),
-      scala.math.max(y, vec.y)
-    )
-  }
+  def rotate(): Vector2 = ???
 
   def copy(): Vector2 = {
     Vector2(this.x, this.y)
@@ -96,10 +101,16 @@ case class Vector2(x: Float, y: Float) extends Vector with Bufferable {
     s"($x, $y)"
   }
 
-  lazy val toBuffer: FloatBuffer = {
+  def allocateBuffer: FloatBuffer = {
     val direct = Buffers.createFloatBuffer(2)
     direct.put(x).put(y)
-    direct.flip
+    direct.flip()
     direct
+  }
+
+  def updateBuffer(buffer: FloatBuffer): Unit = {
+    buffer.clear()
+    buffer.put(x).put(y)
+    buffer.flip()
   }
 }

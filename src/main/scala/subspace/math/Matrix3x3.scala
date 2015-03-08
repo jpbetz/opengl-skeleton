@@ -3,6 +3,13 @@ package subspace.math
 import java.nio.FloatBuffer
 
 object Matrix3x3 {
+  // convenience constructors
+  def apply(column1: Vector3, column2: Vector3, column3: Vector3): Matrix3x3 = Matrix3x3(
+    column1.x, column1.y, column1.z,
+    column2.x, column2.y, column2.z,
+    column3.x, column3.y, column3.z
+  )
+
   lazy val identity = Matrix3x3(
     1, 0, 0,
     0, 1, 0,
@@ -16,6 +23,28 @@ case class Matrix3x3(
     m20: Float, m21: Float, m22: Float)
   extends Matrix
   with Bufferable {
+
+  def rowCount: Int = 4
+  def columnCount: Int = 4
+
+  def apply(columnIndex: Int, rowIndex: Int): Float = {
+    // ugh,  Should I switch to an array for internal representation?
+    (columnIndex, rowIndex) match {
+      case (0, 0) => m00
+      case (0, 1) => m01
+      case (0, 2) => m02
+
+      case (1, 0) => m10
+      case (1, 1) => m11
+      case (1, 2) => m12
+
+      case (2, 0) => m20
+      case (2, 1) => m21
+      case (2, 2) => m22
+
+      case _ => throw new ArrayIndexOutOfBoundsException(s"column: $columnIndex, row: $rowIndex is out of range.")
+    }
+  }
 
   def unary_- : Matrix3x3 = negate
   def negate: Matrix3x3 = {
@@ -91,13 +120,22 @@ case class Matrix3x3(
 
   def normalMatrix: Matrix3x3 = inverse.transpose
 
-  lazy val toBuffer: FloatBuffer = {
+  def allocateBuffer: FloatBuffer = {
     val direct = Buffers.createFloatBuffer(9)
     direct
       .put(m00).put(m01).put(m02)
       .put(m10).put(m11).put(m12)
       .put(m20).put(m21).put(m22)
-    direct.flip
+    direct.flip()
     direct
+  }
+
+  def updateBuffer(buffer: FloatBuffer): Unit = {
+    buffer.clear()
+    buffer
+      .put(m00).put(m01).put(m02)
+      .put(m10).put(m11).put(m12)
+      .put(m20).put(m21).put(m22)
+    buffer.flip()
   }
 }

@@ -51,9 +51,13 @@ Replace 'osx' with the appropriate platform if needed.
 
 TODO
 ====
-[ ] Upgrade to scala 2.12
-[ ] Convert vector, matrix and quaternion class to scala.  Make them case classes that extend AnyVal so everything is stack allocated.
-[ ] Test out using textures and UV texture coords.
+[x] Upgrade to scala 2.12
+[x] Convert vector, matrix and quaternion class to scala.
+[ ] Write tests for subspace.
+[ ] Rename github project.
+[ ] Move examples to 'test'.
+[ ] Split into multi-project gradle build.  Put subspace in it's own project.
 [ ] Test out importing some astronomical data (e.g. sample of the milky way stars) and rendering a particle system with it.
+[ ] Test out using textures and UV texture coords.
 [ ] Upgrade to [LWJGL 3](http://www.lwjgl.org/download) once it is available in maven central (see release section on the Download page).
 [ ] Add support for [Collada](https://www.khronos.org/files/collada_spec_1_5.pdf) ?  Ugh,  3d file formats look awful.

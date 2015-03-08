@@ -3,7 +3,8 @@ package subspace.math
 import java.nio.{ByteBuffer, ByteOrder, FloatBuffer}
 
 trait Bufferable {
-  def toBuffer: FloatBuffer
+  def allocateBuffer: FloatBuffer
+  def updateBuffer(buffer: FloatBuffer): Unit
 }
 
 object Buffers {

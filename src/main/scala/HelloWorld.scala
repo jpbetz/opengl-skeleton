@@ -116,15 +116,15 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
 
       val worldToViewMatrix = camera.toMatrix
-      glUniformMatrix4(worldToViewMatrixUnif, false, worldToViewMatrix.toBuffer)
+      glUniformMatrix4(worldToViewMatrixUnif, false, worldToViewMatrix.allocateBuffer)
 
       val modelToWorldMatrix = sceneModel.toMatrix
       val modelViewMatrix = modelToWorldMatrix * worldToViewMatrix
-      glUniformMatrix4(modelToViewMatrixUnif, false, modelViewMatrix.toBuffer)
+      glUniformMatrix4(modelToViewMatrixUnif, false, modelViewMatrix.allocateBuffer)
 
 
       val normalViewMatrix = modelViewMatrix.normalMatrix
-      glUniformMatrix4(modelToViewNormalMatrixUnif, false, normalViewMatrix.toBuffer)
+      glUniformMatrix4(modelToViewNormalMatrixUnif, false, normalViewMatrix.allocateBuffer)
       glUniformMatrix4(viewToPerspectiveMatrixUnif, false, perspectiveMatrixBuffer)
     }
 
@@ -134,7 +134,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
     def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
       val matrix = Matrix4x4.forPerspective(scala.math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
-      matrix.toBuffer
+      matrix.allocateBuffer
     }
   }
 
