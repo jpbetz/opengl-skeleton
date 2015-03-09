@@ -4,6 +4,7 @@ package hello
 import java.io.{File, FileInputStream}
 import java.nio.FloatBuffer
 
+import com.github.jpbetz.subspace.{Matrix4x4, Vector3}
 import io.BlenderLoader
 import model._
 import opengl.ShaderLoader
@@ -13,7 +14,6 @@ import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL20._
 import org.lwjgl.opengl.GL31._
 import state.{State, VertexArrayState}
-import subspace.math.{Vector3, Matrix4x4}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -25,8 +25,8 @@ object HelloWorld extends App {
 
 class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
 
-  var camera = new SceneCamera(Vector3(0f, 0f, -3f), Vector3.zero)
-  var sceneModel = new SceneModel(Vector3.zero, Vector3.zero)
+  var camera = new SceneCamera(Vector3(0f, 0f, -3f), Vector3.fill(0))
+  var sceneModel = new SceneModel(Vector3.fill(0), Vector3.fill(0))
 
   val rotationDelta = 0.1f
   val scaleDelta = 0.1f
@@ -49,7 +49,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
 
     // TODO: make movement relative to camera angle
-    var delta = Vector3.zero
+    var delta = Vector3.fill(0)
     if(Keyboard.isKeyDown(Keyboard.KEY_UP)) delta = delta.add(0, posDelta, 0)
     if(Keyboard.isKeyDown(Keyboard.KEY_DOWN)) delta = delta.add(0, -posDelta, 0)
     if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) delta = delta.add(posDelta, 0, 0)
@@ -95,7 +95,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     var programId = 0
     val vertexShader = "src/main/shaders/MatrixPerspective.vert"
     val fragmentShader = "src/main/shaders/fragment_basic.glsl"
-    val perspectiveMatrixBuffer = createPerspectiveMatrix(frustumScale = 1.00f, zNear = 0.0001f, zFar = 10000.0f)
+    val perspectiveMatrixBuffer = createPerspectiveMatrix(frustumScale = 1.00f, zNear = 0.01f, zFar = 1000.0f)
 
     override def init() {
       val shaders = mutable.Map[Int, Int]()
@@ -119,7 +119,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
       glUniformMatrix4(worldToViewMatrixUnif, false, worldToViewMatrix.allocateBuffer)
 
       val modelToWorldMatrix = sceneModel.toMatrix
-      val modelViewMatrix = modelToWorldMatrix * worldToViewMatrix
+      val modelViewMatrix = worldToViewMatrix * modelToWorldMatrix
       glUniformMatrix4(modelToViewMatrixUnif, false, modelViewMatrix.allocateBuffer)
 
 
@@ -133,7 +133,7 @@ class HelloWorld extends SingleWindowScene(800, 600, 3, 2) {
     }
 
     def createPerspectiveMatrix(frustumScale: Float, zNear: Float, zFar: Float): FloatBuffer = {
-      val matrix = Matrix4x4.forPerspective(scala.math.Pi.toFloat/2f, 1f, 1f, zNear, zFar)
+      val matrix = Matrix4x4.forPerspective(scala.math.Pi.toFloat/3f, 1f, zNear, zFar)
       matrix.allocateBuffer
     }
   }

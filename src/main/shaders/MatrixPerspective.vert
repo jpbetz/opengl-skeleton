@@ -40,10 +40,9 @@ float applyPointLight(mat4 viewMatrix, vec3 vertexViewPosition, vec3 vertexViewN
 
 void main()
 {
+	//mat4 normalMatrix = transpose(inverse(modelToViewMatrix));
+
 	vec4 viewPosition = modelToViewMatrix * vec4(position, 1.0);
-
-	mat4 normalMatrix = transpose(inverse(modelToViewMatrix));
-
 	vec3 viewNormal = normalize(modelToViewNormalMatrix * vec4(normal, 0.0)).xyz;
 
     PointLight pointLight = PointLight(vec3(5.0, 0.0, 5.0), vec3(1.0, 1.0, 1.0), 100.0);
@@ -54,6 +53,5 @@ void main()
     light = vec4(lightIntensity, lightIntensity, lightIntensity, 1.0);// + ambientLight;
     //light = vec4(1.0, 1.0, 1.0, 1.0);
 
-    vec4 perspectivePosition = viewToPerspectiveMatrix * viewPosition;
-    gl_Position = perspectivePosition;
+    gl_Position = viewToPerspectiveMatrix * viewPosition;
 }
